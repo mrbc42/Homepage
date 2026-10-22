@@ -1,0 +1,22 @@
+[Unit]
+Description=Home Base start page
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+ContainerName=homepage
+Image=ghcr.io/mrbc42/homepage:latest
+AutoUpdate=registry
+PublishPort=8080:8080
+Volume=homepage.volume:/data:Z
+# Uncomment to require a password before settings can be changed.
+# Secret=homepage-admin,type=env,target=HOMEPAGE_ADMIN_PASSWORD
+HealthCmd=wget -qO- http://127.0.0.1:8080/healthz || exit 1
+HealthInterval=60s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home Base</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: greeting + search band, then a weather hero beside a headlines card, then app tiles grouped by shelf; settings slide in from the right */
+:root {
+  --bg: #f3f1fb;
+  --bg-glow-1: #ffd6e8;
+  --bg-glow-2: #c9f0ff;
+  --surface: #ffffff;
+  --surface-2: #f6f4fd;
+  --fg: #1d1838;
+  --muted: #6a6488;
+  --line: #e3dff3;
+  --focus: #ff5e8a;
+
+  /* tile colours — the whole page draws from these */
+  --c-tangerine: #ff7a1a;
+  --c-berry: #e8357a;
+  --c-teal: #0fa99a;
+  --c-lime: #6cbf1d;
+  --c-sky: #1f8fff;
+  --c-sun: #f2b705;
+  --c-violet: #8a4dff;
+  --c-coral: #ff5a5f;
+
+  --ok: #19b36b;
+  --warn: #f2a705;
+  --down: #e5484d;
+  --unknown: #a7a2bf;
+
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --r-lg: 28px;
+  --r-md: 20px;
+  --r-sm: 12px;
+  --shadow: 0 1px 2px rgb(29 24 56 / .05), 0 8px 24px -12px rgb(29 24 56 / .18);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #130f26; --bg-glow-1: #3a1240; --bg-glow-2: #0b3047;
+    --surface: #1e1938; --surface-2: #262046; --fg: #f3f0ff; --muted: #a49dc6; --line: #332c58;
+    --c-sky: #4aa5ff; --c-violet: #a376ff; --c-berry: #ff4f93; --unknown: #6b6590;
+    --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 10px 30px -14px rgb(0 0 0 / .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #130f26; --bg-glow-1: #3a1240; --bg-glow-2: #0b3047;
+  --surface: #1e1938; --surface-2: #262046; --fg: #f3f0ff; --muted: #a49dc6; --line: #332c58;
+  --c-sky: #4aa5ff; --c-violet: #a376ff; --c-berry: #ff4f93; --unknown: #6b6590;
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 10px 30px -14px rgb(0 0 0 / .6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { min-height: 100%; }
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(60rem 30rem at 10% -10%, var(--bg-glow-1), transparent 60%),
+    radial-gradient(50rem 30rem at 100% 0%, var(--bg-glow-2), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--fg);
+  font: 400 15px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 10px; }
+
+.wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 28px;
+}
+
+/* ——— header ——— */
+.head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 20px; }
+.hello { min-width: 0; }
+.hello .date { font: 600 12px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.hello h1 {
+  margin: 8px 0 0;
+  font: 800 clamp(30px, 5vw, 52px)/1 var(--font-display);
+  letter-spacing: -.02em;
+  text-wrap: balance;
+}
+.hello h1 .clock {
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(90deg, var(--c-tangerine), var(--c-berry) 55%, var(--c-violet));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.head-right { flex: 1 1 320px; max-width: 520px; display: flex; gap: 10px; align-items: center; }
+.search {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 6px 6px 18px; box-shadow: var(--shadow);
+}
+.search svg { flex: none; color: var(--muted); }
+.search input { flex: 1; min-width: 0; border: 0; background: none; padding: 8px 0; outline: none; }
+.search button {
+  border: 0; border-radius: 999px; padding: 9px 16px; cursor: pointer; font-weight: 600;
+  background: var(--fg); color: var(--bg);
+}
+.gear {
+  flex: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--fg);
+}
+.gear:hover svg { transform: rotate(45deg); }
+.gear svg { transition: transform .3s ease; }
+
+/* ——— top row ——— */
+.top { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 20px; }
+.top.solo { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 900px) { .top { grid-template-columns: minmax(0, 1fr); } }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--shadow);
+  padding: 22px; min-width: 0;
+}
+.card-title {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: 0 0 14px; font: 700 18px/1.2 var(--font-display);
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 600 11px/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase;
+  padding: 6px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted);
+}
+
+/* weather hero — colour follows the sky */
+.weather {
+  --w1: var(--c-sun); --w2: var(--c-tangerine);
+  position: relative; overflow: hidden;
+  border-radius: var(--r-lg); padding: 24px; color: #fff;
+  background: linear-gradient(135deg, var(--w1), var(--w2));
+  box-shadow: var(--shadow); min-width: 0;
+  display: grid; gap: 20px; align-content: start;
+}
+.weather[data-sky="clear-night"] { --w1: #3b2a8f; --w2: #14105a; }
+.weather[data-sky="partly"]  { --w1: #ffb020; --w2: #2f8dff; }
+.weather[data-sky="cloudy"], .weather[data-sky="none"] { --w1: #7b86b8; --w2: #4a5590; }
+.weather[data-sky="fog"]     { --w1: #9aa3c4; --w2: #6a6f9a; }
+.weather[data-sky="rain"], .weather[data-sky="drizzle"] { --w1: #12b5c9; --w2: #2a52d9; }
+.weather[data-sky="snow"]    { --w1: #7fd3ff; --w2: #6a7dff; }
+.weather[data-sky="storm"]   { --w1: #7a3cff; --w2: #2a1a6e; }
+.weather::after {
+  content: ""; position: absolute; width: 340px; height: 340px; right: -110px; top: -140px;
+  border-radius: 50%; background: rgb(255 255 255 / .14); pointer-events: none;
+}
+.w-now { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; position: relative; z-index: 1; }
+.w-icon { width: 92px; height: 92px; flex: none; filter: drop-shadow(0 6px 14px rgb(0 0 0 / .18)); }
+.w-icon:empty { display: none; }
+.w-temp { font: 800 clamp(56px, 9vw, 84px)/.9 var(--font-display); letter-spacing: -.04em; }
+.w-temp:empty { display: none; }
+.w-temp sup { font-size: .38em; vertical-align: top; position: relative; top: .3em; margin-left: 2px; }
+.w-desc { display: grid; gap: 4px; min-width: 0; }
+.w-desc strong { font: 700 22px/1.15 var(--font-display); }
+.w-desc span { opacity: .88; }
+.w-place { margin-left: auto; text-align: right; font-size: 13px; opacity: .9; display: grid; gap: 6px; justify-items: end; }
+.w-place .pill { background: rgb(255 255 255 / .2); color: #fff; }
+@media (max-width: 560px) { .w-place { margin-left: 0; text-align: left; justify-items: start; } }
+.w-cta {
+  justify-self: start; position: relative; z-index: 1; cursor: pointer;
+  border: 0; border-radius: 999px; padding: 10px 18px; font-weight: 600;
+  background: #fff; color: #2a2560;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; position: relative; z-index: 1; }
+.chips:empty, .hours:empty, .days:empty { display: none; }
+.chip {
+  display: grid; gap: 2px; padding: 10px 14px; border-radius: var(--r-sm);
+  background: rgb(255 255 255 / .16); backdrop-filter: blur(6px); min-width: 92px;
+}
+.chip small { font: 600 10px/1.2 var(--font-body); letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
+.chip b { font: 600 15px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.hours {
+  display: flex; gap: 6px; overflow-x: auto; position: relative; z-index: 1;
+  padding-bottom: 4px; scrollbar-width: thin;
+}
+.hour {
+  flex: 0 0 auto; display: grid; justify-items: center; gap: 4px;
+  padding: 10px 10px; border-radius: var(--r-sm); min-width: 58px;
+  background: rgb(255 255 255 / .1);
+  font-variant-numeric: tabular-nums;
+}
+.hour:first-child { background: rgb(255 255 255 / .26); }
+.hour small { font-size: 12px; opacity: .85; }
+.hour svg { width: 28px; height: 28px; }
+.hour b { font: 600 14px/1 var(--font-mono); }
+.hour i { font: 400 11px/1 var(--font-mono); font-style: normal; opacity: .8; min-height: 11px; }
+
+.days { display: grid; gap: 4px; position: relative; z-index: 1; }
+.day {
+  display: grid; grid-template-columns: 54px 30px 44px minmax(60px, 1fr) 44px; align-items: center; gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.day svg { width: 26px; height: 26px; }
+.day .lo { text-align: right; font: 400 14px var(--font-mono); opacity: .8; }
+.day .hi { font: 600 14px var(--font-mono); }
+.range { position: relative; height: 8px; border-radius: 99px; background: rgb(255 255 255 / .18); }
+.range span {
+  position: absolute; top: 0; bottom: 0; border-radius: 99px;
+  background: linear-gradient(90deg, #bfeaff, #fff3b0, #ffb36b);
+}
+
+/* headlines */
+.news { display: grid; align-content: start; }
+.news ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: n; }
+.news li a {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start;
+  padding: 10px 8px; border-radius: var(--r-sm); text-decoration: none;
+}
+.news li a:hover { background: var(--surface-2); }
+.news li a::before {
+  counter-increment: n; content: counter(n);
+  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px;
+  font: 600 12px/1 var(--font-mono); color: #fff; background: var(--dot, var(--c-tangerine));
+}
+.news li:nth-child(6n+2) { --dot: var(--c-berry); }
+.news li:nth-child(6n+3) { --dot: var(--c-violet); }
+.news li:nth-child(6n+4) { --dot: var(--c-sky); }
+.news li:nth-child(6n+5) { --dot: var(--c-teal); }
+.news li:nth-child(6n+6) { --dot: var(--c-lime); }
+.news .t { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.news .m { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; font-family: var(--font-mono); }
+.news .msg { color: var(--muted); padding: 8px; }
+
+/* ——— apps ——— */
+.apps { display: grid; gap: 22px; }
+.apps-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.apps-head h2 { margin: 0; font: 800 28px/1 var(--font-display); letter-spacing: -.02em; }
+.apps-head .status-sum { color: var(--muted); font-size: 14px; margin-top: 6px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 9px 16px; font-weight: 600; box-shadow: var(--shadow); text-decoration: none;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { border: 0; color: #fff; background: linear-gradient(135deg, var(--c-berry), var(--c-tangerine)); }
+.btn.danger { color: var(--down); }
+.btn.danger.armed { background: var(--down); color: #fff; border-color: var(--down); }
+.btn:disabled { opacity: .55; cursor: default; }
+
+.shelves { display: grid; gap: 26px; }
+.shelf { display: grid; gap: 12px; }
+.shelf h3 {
+  margin: 0; display: flex; align-items: center; gap: 10px;
+  font: 600 12px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+.shelf h3::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+
+.tile {
+  --c: var(--c-sky);
+  position: relative; display: flex; align-items: center; gap: 14px;
+  padding: 14px; border-radius: var(--r-md); text-decoration: none; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.tile::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c) 14%, transparent), transparent 60%);
+}
+.tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 55%, var(--line)); box-shadow: 0 14px 30px -14px color-mix(in srgb, var(--c) 70%, transparent); }
+.ico {
+  position: relative; flex: none; width: 50px; height: 50px; border-radius: 15px;
+  display: grid; place-items: center; overflow: hidden;
+  background: var(--c); color: #fff; font: 800 20px/1 var(--font-display);
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / .12);
+}
+.ico img { width: 32px; height: 32px; object-fit: contain; }
+.ico.has-img { background: color-mix(in srgb, var(--c) 18%, var(--surface)); }
+.ico.sm { width: 36px; height: 36px; border-radius: 11px; font-size: 15px; }
+.ico.sm img { width: 22px; height: 22px; }
+.tile-text { position: relative; min-width: 0; display: grid; gap: 2px; }
+.tile-text b { font: 700 16px/1.2 var(--font-display); overflow-wrap: anywhere; }
+.tile-text small { color: var(--muted); font: 400 12px/1.3 var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot {
+  position: absolute; top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--unknown);
+}
+.dot[data-s="up"] { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 22%, transparent); }
+.dot[data-s="error"] { background: var(--warn); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 22%, transparent); }
+.dot[data-s="down"] { background: var(--down); box-shadow: 0 0 0 4px color-mix(in srgb, var(--down) 22%, transparent); }
+.dot[data-s="off"] { display: none; }
+@media (prefers-reduced-motion: reduce) { .tile, .gear svg { transition: none; } }
+
+.add-tile {
+  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 80px;
+  border: 2px dashed var(--line); border-radius: var(--r-md); background: transparent;
+  color: var(--muted); font-weight: 600; cursor: pointer;
+}
+.add-tile:hover { border-color: var(--c-berry); color: var(--c-berry); }
+.empty {
+  display: grid; gap: 12px; justify-items: start; padding: 28px;
+  border: 2px dashed var(--line); border-radius: var(--r-lg);
+}
+.empty h3 { margin: 0; font: 700 20px/1.2 var(--font-display); }
+.empty p { margin: 0; color: var(--muted); max-width: 52ch; }
+
+.foot { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+
+/* ——— dialogs ——— */
+dialog {
+  width: min(480px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 0; background: var(--surface); color: var(--fg); box-shadow: 0 30px 80px -20px rgb(0 0 0 / .45);
+}
+dialog::backdrop { background: rgb(20 15 40 / .45); backdrop-filter: blur(3px); }
+.dlg { padding: 24px; display: grid; gap: 14px; }
+.dlg h2 { margin: 0; font: 800 24px/1.1 var(--font-display); }
+.field { display: grid; gap: 6px; }
+.field > label, .field > .label { font-weight: 600; font-size: 13px; }
+.field input:not([type="checkbox"]):not([type="radio"]), .field select {
+  width: 100%; padding: 10px 12px; border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: var(--surface-2);
+}
+.field .hint { color: var(--muted); font-size: 12px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
+.check { display: flex; align-items: center; gap: 10px; font-weight: 500; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--c-berry); }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatches input { position: absolute; opacity: 0; pointer-events: none; }
+.swatches label {
+  width: 34px; height: 34px; border-radius: 11px; cursor: pointer; background: var(--sw);
+  border: 3px solid transparent; outline: 2px solid transparent;
+}
+.swatches input:checked + label { border-color: var(--surface); outline-color: var(--sw); }
+.swatches input:focus-visible + label { outline: 3px solid var(--focus); }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.form-error { color: var(--down); font-weight: 600; font-size: 13px; }
+.form-error:empty { display: none; }
+
+/* settings drawer */
+dialog.drawer {
+  margin: 0 0 0 auto; height: 100%; max-height: 100%; width: min(560px, 100vw);
+  border-radius: var(--r-lg) 0 0 var(--r-lg); border-right: 0;
+  display: none; flex-direction: column;
+}
+dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
+@keyframes slide { from { transform: translateX(40px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { dialog.drawer[open] { animation: none; } }
+@media (max-width: 600px) { dialog.drawer { border-radius: 0; border-left: 0; } }
+.drawer-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) 0 24px;
+}
+.drawer-head h2 { margin: 0; font: 800 26px/1 var(--font-display); }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2);
+  display: grid; place-items: center; cursor: pointer; flex: none;
+}
+.icon-btn:hover { border-color: var(--muted); }
+.icon-btn:disabled { opacity: .35; cursor: default; }
+.icon-btn.sm { width: 32px; height: 32px; }
+.tabs { display: flex; gap: 6px; padding: 16px 24px 0; flex-wrap: wrap; }
+.tab {
+  border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; font-weight: 600;
+  background: var(--surface-2); color: var(--muted);
+}
+.tab[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.drawer-body {
+  flex: 1; overflow-y: auto; display: grid; align-content: start; gap: 18px;
+  padding: 20px max(24px, env(safe-area-inset-right, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)) 24px;
+}
+.panel { display: grid; gap: 16px; }
+.section-title { margin: 6px 0 0; font: 600 12px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.loc-now {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px; border-radius: var(--r-sm); background: var(--surface-2);
+}
+.loc-now b { display: block; }
+.loc-now small { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+.loc-search { display: flex; gap: 8px; }
+.loc-search input { flex: 1; min-width: 0; }
+.loc-results { display: grid; gap: 4px; }
+.loc-results button {
+  text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-sm);
+  padding: 10px 12px; cursor: pointer;
+}
+.loc-results button:hover { border-color: var(--c-berry); }
+.loc-results small { color: var(--muted); }
+
+.group-card { border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.group-head {
+  display: flex; align-items: center; gap: 6px; padding: 10px 10px 10px 14px; background: var(--surface-2);
+}
+.group-head input {
+  flex: 1; min-width: 0; border: 1px solid transparent; background: transparent; border-radius: 8px;
+  padding: 6px 8px; font: 700 15px/1.2 var(--font-display);
+}
+.group-head input:hover, .group-head input:focus { border-color: var(--line); background: var(--surface); }
+.app-row { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border-top: 1px solid var(--line); }
+.app-row .tile-text { flex: 1; }
+.app-row .tile-text b { font-size: 15px; }
+.row-actions { display: flex; gap: 4px; flex: none; }
+.group-foot { border-top: 1px solid var(--line); padding: 8px; }
+.group-foot button { width: 100%; border: 0; background: none; color: var(--muted); font-weight: 600; padding: 8px; border-radius: 10px; cursor: pointer; }
+.group-foot button:hover { background: var(--surface-2); color: var(--c-berry); }
+.new-group { display: flex; gap: 8px; }
+.new-group input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); }
+.note { color: var(--muted); font-size: 13px; margin: 0; }
+.lock { display: grid; gap: 14px; padding: 8px 0; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--fg); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 600;
+  box-shadow: var(--shadow); z-index: 20; max-width: calc(100vw - 32px);
+}
+.toast.bad { background: var(--down); color: #fff; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="head">
+    <div class="hello">
+      <div class="date" id="date">&nbsp;</div>
+      <h1><span id="greet">Hello</span> · <span class="clock" id="clock">--:--</span></h1>
+    </div>
+    <div class="head-right">
+      <form class="search" id="search" role="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" name="q" type="search" placeholder="Search the web…" autocomplete="off" aria-label="Search the web">
+        <button type="submit">Search</button>
+      </form>
+      <button class="gear" id="open-settings" type="button" aria-label="Settings" title="Settings">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="top" id="top">
+    <article class="weather" id="weather" data-sky="none" aria-live="polite">
+      <div class="w-now">
+        <div class="w-icon" id="w-icon"></div>
+        <div class="w-temp" id="w-temp"></div>
+        <div class="w-desc"><strong id="w-desc">Loading weather…</strong><span id="w-feels"></span></div>
+        <div class="w-place"><span id="w-place"></span><span class="pill" id="w-src" hidden>Open-Meteo</span></div>
+      </div>
+      <button class="w-cta" id="w-cta" type="button" hidden>Set your location</button>
+      <div class="chips" id="w-chips"></div>
+      <div class="hours" id="w-hours" aria-label="Next 12 hours"></div>
+      <div class="days" id="w-days" aria-label="Next 5 days"></div>
+    </article>
+
+    <article class="card news" id="news">
+      <h2 class="card-title">Headlines <span class="pill">Hacker News</span></h2>
+      <ol id="news-list"><li class="msg">Loading…</li></ol>
+    </article>
+  </section>
+
+  <section class="apps" id="apps">
+    <div class="apps-head">
+      <div>
+        <h2>My apps</h2>
+        <div class="status-sum" id="status-sum">&nbsp;</div>
+      </div>
+      <div class="btns">
+        <button class="btn" id="manage-btn" type="button">Manage apps</button>
+        <button class="btn primary" id="add-btn" type="button">+ Add app</button>
+      </div>
+    </div>
+    <div class="shelves" id="shelves"></div>
+  </section>
+
+  <footer class="foot">
+    <span>Weather, air quality and place search: Open-Meteo</span>
+    <span>Headlines: Hacker News</span>
+    <span>Icons: dashboardicons.com</span>
+  </footer>
+</main>
+
+<!-- settings drawer -->
+<dialog class="drawer" id="settings" aria-labelledby="settings-title">
+  <div class="drawer-head">
+    <h2 id="settings-title">Settings</h2>
+    <button class="icon-btn" type="button" id="settings-close" aria-label="Close settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" type="button" data-tab="general" aria-selected="true">General</button>
+    <button class="tab" role="tab" type="button" data-tab="apps" aria-selected="false">Apps</button>
+    <button class="tab" role="tab" type="button" data-tab="backup" aria-selected="false">Backup</button>
+  </div>
+  <div class="drawer-body">
+    <form class="lock" id="lock" hidden>
+      <p class="note">Settings are protected. Enter the admin password set on the server.</p>
+      <div class="field">
+        <label for="lock-pw">Admin password</label>
+        <input id="lock-pw" type="password" autocomplete="current-password" required>
+      </div>
+      <div class="form-error" id="lock-error"></div>
+      <div><button class="btn primary" type="submit">Unlock</button></div>
+    </form>
+
+    <form class="panel" id="panel-general" data-panel="general">
+      <div class="field">
+        <label for="s-title">Page title</label>
+        <input id="s-title" name="title" maxlength="40" required>
+      </div>
+
+      <h3 class="section-title">Weather location</h3>
+      <div class="loc-now" id="loc-now"></div>
+      <div class="field">
+        <label for="loc-q">Find a place</label>
+        <div class="loc-search">
+          <input id="loc-q" placeholder="Town or city" autocomplete="off">
+          <button class="btn" type="button" id="loc-find">Search</button>
+        </div>
+      </div>
+      <div class="loc-results" id="loc-results"></div>
+
+      <h3 class="section-title">Display</h3>
+      <div class="row2">
+        <div class="field">
+          <label for="s-temp">Temperature</label>
+          <select id="s-temp" name="temperature_unit">
+            <option value="celsius">Celsius (°C)</option>
+            <option value="fahrenheit">Fahrenheit (°F)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="s-wind">Wind speed</label>
+          <select id="s-wind" name="wind_unit">
+            <option value="kmh">km/h</option>
+            <option value="mph">mph</option>
+            <option value="ms">m/s</option>
+            <option value="kn">knots</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="s-headlines">Headlines to show</label>
+          <input id="s-headlines" name="headlines" type="number" min="0" max="20" required>
+          <span class="hint">0 hides the headlines card.</span>
+        </div>
+        <div class="field">
+          <label for="s-search">Search engine</label>
+          <select id="s-search" name="search_url">
+            <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
+            <option value="https://www.google.com/search?q=">Google</option>
+            <option value="https://www.bing.com/search?q=">Bing</option>
+            <option value="https://www.startpage.com/do/search?q=">Startpage</option>
+            <option value="https://kagi.com/search?q=">Kagi</option>
+          </select>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="s-clock" name="clock_24h"> 24-hour clock</label>
+      <label class="check"><input type="checkbox" id="s-newtab" name="open_in_new_tab"> Open apps in a new tab</label>
+
+      <h3 class="section-title">Status checks</h3>
+      <label class="check"><input type="checkbox" id="s-status" name="status_checks"> Check whether my apps are online</label>
+      <div class="field">
+        <label for="s-interval">Check every (seconds)</label>
+        <input id="s-interval" name="status_interval" type="number" min="15" max="3600" required>
+      </div>
+
+      <div class="form-error" id="general-error"></div>
+      <div><button class="btn primary" type="submit">Save settings</button></div>
+    </form>
+
+    <div class="panel" id="panel-apps" data-panel="apps" hidden>
+      <p class="note">Use the arrows to change the order. Changes save straight away.</p>
+      <div id="manage-list" class="panel"></div>
+      <form class="new-group" id="new-group">
+        <input id="ng-name" placeholder="New group name" maxlength="40" aria-label="New group name" required>
+        <button class="btn" type="submit">Add group</button>
+      </form>
+    </div>
+
+    <div class="panel" id="panel-backup" data-panel="backup" hidden>
+      <h3 class="section-title">Download a backup</h3>
+      <p class="note">Saves your settings and apps as a JSON file you can import later or on another server.</p>
+      <div><button class="btn" type="button" id="export">Download backup</button></div>
+      <h3 class="section-title">Restore from a backup</h3>
+      <p class="note">Importing replaces all your current settings and apps.</p>
+      <div class="field">
+        <label for="import-file">Backup file</label>
+        <input id="import-file" type="file" accept="application/json,.json">
+      </div>
+      <div class="form-error" id="import-error"></div>
+      <div><button class="btn danger" type="button" id="import" disabled>Replace everything with this backup</button></div>
+    </div>
+  </div>
+</dialog>
+
+<!-- add / edit app -->
+<dialog id="app-dlg">
+  <form class="dlg" id="app-form">
+    <h2 id="app-dlg-title">Add an app</h2>
+    <div class="field">
+      <label for="f-name">Name</label>
+      <input id="f-name" name="name" required maxlength="60" placeholder="Paperless">
+    </div>
+    <div class="field">
+      <label for="f-url">Address</label>
+      <input id="f-url" name="url" required placeholder="http://192.168.1.20:8000">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="f-group">Group</label>
+        <select id="f-group" name="group_id"></select>
+      </div>
+      <div class="field" id="f-newgroup-wrap" hidden>
+        <label for="f-newgroup">New group name</label>
+        <input id="f-newgroup" name="group" maxlength="40">
+      </div>
+    </div>
+    <div class="field">
+      <label for="f-icon">Icon (optional)</label>
+      <input id="f-icon" name="icon" placeholder="paperless-ngx">
+      <span class="hint">A name from dashboardicons.com or a full image URL. Leave blank to show the first letter.</span>
+    </div>
+    <div class="field">
+      <span class="label">Colour</span>
+      <div class="swatches" id="swatches"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="f-check" name="check" checked> Check whether it's online</label>
+    <div class="field">
+      <label for="f-checkurl">Address to check (optional)</label>
+      <input id="f-checkurl" name="check_url" placeholder="Same as the app address">
+      <span class="hint">Useful when the app redirects to a login page on another host.</span>
+    </div>
+    <div class="form-error" id="app-error"></div>
+    <div class="dlg-actions">
+      <button class="btn danger" type="button" id="app-delete" hidden>Delete</button>
+      <span style="flex:1"></span>
+      <button class="btn" type="button" id="app-cancel">Cancel</button>
+      <button class="btn primary" type="submit" id="app-save">Add app</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+const ICON_CDN = n => `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/${n}.svg`;
+const TOKEN_KEY = "homebase.token";
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const state = { settings: null, groups: [], colours: [], authRequired: false, status: {} };
+
+function toast(msg, bad = false) {
+  const t = $("#toast"); t.textContent = msg; t.className = "toast" + (bad ? " bad" : ""); t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), bad ? 4000 : 2200);
+}
+function getToken() { try { return sessionStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; } }
+function setToken(v) { try { v ? sessionStorage.setItem(TOKEN_KEY, v) : sessionStorage.removeItem(TOKEN_KEY); } catch {} }
+
+class ApiError extends Error { constructor(msg, status) { super(msg); this.status = status; } }
+async function api(path, { method = "GET", body } = {}) {
+  const headers = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const token = getToken();
+  if (token) headers.Authorization = "Bearer " + token;
+  const r = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const data = r.status === 204 ? null : await r.json().catch(() => null);
+  if (r.status === 401 && path !== "/api/login") { setToken(""); showLock(true); }
+  if (!r.ok) throw new ApiError(data?.error || `Request failed (${r.status})`, r.status);
+  return data;
+}
+
+/* ——— clock & search ——— */
+function tick() {
+  const d = new Date(), h = d.getHours();
+  $("#greet").textContent = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  $("#clock").textContent = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: !(state.settings?.clock_24h ?? true) });
+  $("#date").textContent = d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
+}
+setInterval(tick, 1000);
+
+$("#search").addEventListener("submit", e => {
+  e.preventDefault();
+  const q = $("#q").value.trim(); if (!q) return;
+  location.href = (state.settings?.search_url || "https://duckduckgo.com/?q=") + encodeURIComponent(q);
+});
+
+/* ——— weather ——— */
+const WMO = c =>
+  c === 0 ? ["clear", "Clear sky"] : c === 1 ? ["partly", "Mainly clear"] : c === 2 ? ["partly", "Partly cloudy"] :
+  c === 3 ? ["cloudy", "Overcast"] : c <= 48 ? ["fog", "Fog"] : c <= 57 ? ["drizzle", "Drizzle"] :
+  c <= 67 ? ["rain", c >= 65 ? "Heavy rain" : "Rain"] : c <= 77 ? ["snow", "Snow"] :
+  c <= 82 ? ["rain", "Rain showers"] : c <= 86 ? ["snow", "Snow showers"] : ["storm", "Thunderstorm"];
+
+function wIcon(kind, day = true) {
+  const sun = `<circle cx="32" cy="30" r="11" fill="#FFD43B"/><g stroke="#FFD43B" stroke-width="4" stroke-linecap="round">${[0,45,90,135,180,225,270,315].map(a => {
+    const r = a * Math.PI / 180; return `<line x1="${32 + Math.cos(r) * 16}" y1="${30 + Math.sin(r) * 16}" x2="${32 + Math.cos(r) * 21}" y2="${30 + Math.sin(r) * 21}"/>`; }).join("")}</g>`;
+  const moon = `<path d="M40 14a16 16 0 1 0 12 26A13 13 0 0 1 40 14z" fill="#FFF3C4"/>`;
+  const cloud = (fill = "#fff", dx = 0, dy = 0) => `<path transform="translate(${dx} ${dy})" d="M20 52h28a11 11 0 0 0 0-22 15 15 0 0 0-28 4 9 9 0 0 0 0 18z" fill="${fill}"/>`;
+  const drops = n => Array.from({ length: n }, (_, i) => `<line x1="${24 + i * 9}" y1="56" x2="${21 + i * 9}" y2="${n > 2 ? 63 : 61}" stroke="#BDEBFF" stroke-width="3.5" stroke-linecap="round"/>`).join("");
+  const flakes = [24, 34, 44].map(x => `<circle cx="${x}" cy="59" r="2.8" fill="#fff"/>`).join("");
+  const body = {
+    clear: day ? sun : moon,
+    partly: `<g transform="translate(6 -6) scale(.8)">${day ? sun : moon}</g>${cloud("#fff", 0, 4)}`,
+    cloudy: `${cloud("#DDE3F7", 8, -6)}${cloud("#fff", 0, 2)}`,
+    fog: `${cloud("#fff", 0, -6)}<g stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity=".85"><line x1="14" y1="54" x2="50" y2="54"/><line x1="20" y1="61" x2="56" y2="61"/></g>`,
+    drizzle: `${cloud("#fff", 0, -6)}${drops(2)}`,
+    rain: `${cloud("#fff", 0, -6)}${drops(3)}`,
+    snow: `${cloud("#fff", 0, -6)}${flakes}`,
+    storm: `${cloud("#E4DCFF", 0, -6)}<path d="M34 46l-7 11h7l-4 9 11-14h-7l4-6z" fill="#FFD43B"/>`,
+  }[kind];
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${body}</svg>`;
+}
+
+const AQI = v => v == null ? "–" : v <= 20 ? `${v} Good` : v <= 40 ? `${v} Fair` : v <= 60 ? `${v} Moderate` : v <= 80 ? `${v} Poor` : `${v} Very poor`;
+const hhmm = iso => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: !state.settings.clock_24h });
+
+function weatherMessage(title, detail, cta) {
+  $("#weather").dataset.sky = "none";
+  for (const id of ["#w-icon", "#w-temp", "#w-chips", "#w-hours", "#w-days"]) $(id).innerHTML = "";
+  $("#w-desc").textContent = title;
+  $("#w-feels").textContent = detail;
+  $("#w-place").textContent = "";
+  $("#w-src").hidden = true;
+  $("#w-cta").hidden = !cta;
+}
+
+function renderWeather({ location: loc, weather: w, air }) {
+  const c = w.current, [kind, label] = WMO(c.weather_code), day = !!c.is_day;
+  $("#w-cta").hidden = true;
+  $("#weather").dataset.sky = kind === "clear" && !day ? "clear-night" : kind;
+  $("#w-icon").innerHTML = wIcon(kind, day);
+  $("#w-temp").innerHTML = `${Math.round(c.temperature_2m)}<sup>${esc(w.current_units.temperature_2m)}</sup>`;
+  $("#w-desc").textContent = label;
+  $("#w-feels").textContent = `Feels like ${Math.round(c.apparent_temperature)}° · High ${Math.round(w.daily.temperature_2m_max[0])}° · Low ${Math.round(w.daily.temperature_2m_min[0])}°`;
+  $("#w-place").textContent = loc.name;
+  $("#w-src").hidden = false;
+
+  const chips = [
+    ["Wind", `${Math.round(c.wind_speed_10m)} ${w.current_units.wind_speed_10m}`],
+    ["Humidity", `${c.relative_humidity_2m}%`],
+    ["Rain chance", `${w.daily.precipitation_probability_max[0] ?? 0}%`],
+    ["UV index", `${Math.round(w.daily.uv_index_max[0] ?? 0)}`],
+    ["Air quality", AQI(air?.current?.european_aqi)],
+    ["Sunrise", hhmm(w.daily.sunrise[0])],
+    ["Sunset", hhmm(w.daily.sunset[0])],
+  ];
+  $("#w-chips").innerHTML = chips.map(([k, v]) => `<div class="chip"><small>${k}</small><b>${esc(v)}</b></div>`).join("");
+
+  // Open-Meteo times are local to the forecast location; compare against "now" there.
+  const nowLocal = new Date(Date.now() + (w.utc_offset_seconds + new Date().getTimezoneOffset() * 60) * 1000);
+  let start = w.hourly.time.findIndex(t => new Date(t).getTime() > nowLocal.getTime() - 3600e3);
+  if (start < 0) start = 0;
+  $("#w-hours").innerHTML = w.hourly.time.slice(start, start + 12).map((t, i) => {
+    const j = start + i, hr = new Date(t).getHours(), p = w.hourly.precipitation_probability[j];
+    return `<div class="hour"><small>${i === 0 ? "Now" : String(hr).padStart(2, "0")}</small>${wIcon(WMO(w.hourly.weather_code[j])[0], hr >= 6 && hr < 19)}<b>${Math.round(w.hourly.temperature_2m[j])}°</b><i>${p >= 20 ? p + "%" : ""}</i></div>`;
+  }).join("");
+
+  const d = w.daily, lo = Math.min(...d.temperature_2m_min.slice(1, 6)), hi = Math.max(...d.temperature_2m_max.slice(1, 6)), span = Math.max(1, hi - lo);
+  $("#w-days").innerHTML = d.time.slice(1, 6).map((t, k) => {
+    const i = k + 1, a = (d.temperature_2m_min[i] - lo) / span * 100, b = (d.temperature_2m_max[i] - lo) / span * 100;
+    return `<div class="day"><span>${new Date(t + "T12:00").toLocaleDateString([], { weekday: "short" })}</span>${wIcon(WMO(d.weather_code[i])[0])}<span class="lo">${Math.round(d.temperature_2m_min[i])}°</span><div class="range"><span style="left:${a}%;right:${100 - b}%"></span></div><span class="hi">${Math.round(d.temperature_2m_max[i])}°</span></div>`;
+  }).join("");
+}
+
+async function loadWeather() {
+  try {
+    const data = await api("/api/weather");
+    if (data.error === "no_location") weatherMessage("Where are you?", "Choose your town in Settings to see the weather.", true);
+    else renderWeather(data);
+  } catch (e) {
+    weatherMessage("Weather unavailable", e.message + " The page tries again in 10 minutes.", false);
+  }
+}
+$("#w-cta").addEventListener("click", () => openSettings("general"));
+
+/* ——— headlines ——— */
+const ago = s => { const m = Math.max(1, Math.round((Date.now() / 1000 - s) / 60)); return m < 60 ? `${m}m ago` : `${Math.round(m / 60)}h ago`; };
+async function loadNews() {
+  const show = state.settings.headlines > 0;
+  $("#news").hidden = !show;
+  $("#top").classList.toggle("solo", !show);
+  if (!show) return;
+  const list = $("#news-list");
+  try {
+    const { items } = await api("/api/headlines");
+    list.innerHTML = items.map(it => {
+      let host = "news.ycombinator.com";
+      try { host = new URL(it.url).hostname.replace(/^www\./, ""); } catch {}
+      return `<li><a href="${esc(it.url)}" target="_blank" rel="noopener"><span><span class="t">${esc(it.title)}</span><span class="m">${it.score} points · ${ago(it.time)} · ${esc(host)}</span></span></a></li>`;
+    }).join("") || `<li class="msg">No stories right now.</li>`;
+  } catch (e) {
+    list.innerHTML = `<li class="msg">${esc(e.message)} The page tries again in 15 minutes.</li>`;
+  }
+}
+
+/* ——— apps ——— */
+const colourVar = c => `var(--c-${state.colours.includes(c) ? c : "sky"})`;
+const hostOf = u => { try { const x = new URL(u); return x.host + (x.pathname.length > 1 ? x.pathname : ""); } catch { return u; } };
+const allApps = () => state.groups.flatMap(g => g.apps);
+
+function iconHTML(a, small = false) {
+  const src = a.icon ? (/^https?:/.test(a.icon) ? a.icon : ICON_CDN(a.icon)) : "";
+  const letter = esc((a.name || "?").trim()[0].toUpperCase());
+  return `<span class="ico${small ? " sm" : ""}${src ? " has-img" : ""}" style="--c:${colourVar(a.colour)}">${src ? `<img src="${esc(src)}" alt="" loading="lazy" data-letter="${letter}">` : letter}</span>`;
+}
+// Icons that fail to load fall back to the coloured first letter.
+document.addEventListener("error", e => {
+  const img = e.target;
+  if (img.tagName === "IMG" && img.dataset.letter) { const box = img.parentElement; box.classList.remove("has-img"); box.textContent = img.dataset.letter; }
+}, true);
+
+function tileHTML(a) {
+  const target = state.settings.open_in_new_tab ? ` target="_blank" rel="noopener"` : "";
+  return `<a class="tile" href="${esc(a.url)}"${target} style="--c:${colourVar(a.colour)}" data-id="${a.id}">
+    ${iconHTML(a)}
+    <span class="tile-text"><b>${esc(a.name)}</b><small>${esc(hostOf(a.url))}</small></span>
+    <span class="dot" data-s="${a.check && state.settings.status_checks ? "" : "off"}" title="Not checked yet"></span>
+  </a>`;
+}
+
+function renderApps() {
+  const groups = state.groups.filter(g => g.apps.length);
+  if (!groups.length) {
+    $("#shelves").innerHTML = `<div class="empty"><h3>Add your first app</h3><p>Link the services you run at home, like Home Assistant, Jellyfin or Proxmox. Each one gets a colourful tile and a dot that shows whether it's online.</p><button class="btn primary" type="button" data-add>+ Add app</button></div>`;
+  } else {
+    $("#shelves").innerHTML = groups.map(g =>
+      `<div class="shelf"><h3>${esc(g.name)}</h3><div class="grid">${g.apps.map(tileHTML).join("")}</div></div>`
+    ).join("") + `<div class="grid"><button class="add-tile" type="button" data-add>+ Add an app</button></div>`;
+  }
+  renderStatus();
+}
+$("#shelves").addEventListener("click", e => { if (e.target.closest("[data-add]")) openAppDialog(); });
+
+function renderStatus() {
+  const apps = allApps(), sum = $("#status-sum");
+  if (!apps.length) { sum.textContent = "No apps yet"; return; }
+  if (!state.settings.status_checks) { sum.textContent = `${apps.length} apps`; return; }
+  let up = 0, checked = 0;
+  for (const a of apps) {
+    const dot = document.querySelector(`.tile[data-id="${a.id}"] .dot`);
+    const s = state.status[a.id];
+    if (!a.check || !dot) continue;
+    if (!s) { dot.dataset.s = ""; dot.title = "Not checked yet"; continue; }
+    checked++; if (s.state === "up") up++;
+    dot.dataset.s = s.state;
+    dot.title = s.state === "down" ? `Not reachable${s.detail ? ": " + s.detail : ""}` :
+      `${s.state === "up" ? "Online" : "Server error"} · HTTP ${s.code} · ${s.ms} ms`;
+  }
+  sum.textContent = !checked ? `${apps.length} apps · checking…` :
+    up === checked ? `All ${checked} checked apps are online` : `${up} of ${checked} checked apps online`;
+}
+
+async function loadStatus() {
+  try { state.status = await api("/api/status"); renderStatus(); } catch {}
+}
+
+/* ——— app dialog ——— */
+const appDlg = $("#app-dlg");
+let editingId = null;
+
+function fillGroupSelect(selected) {
+  const opts = state.groups.map(g => `<option value="${g.id}"${g.id === selected ? " selected" : ""}>${esc(g.name)}</option>`);
+  opts.push(`<option value="new"${state.groups.length ? "" : " selected"}>New group…</option>`);
+  $("#f-group").innerHTML = opts.join("");
+  $("#f-newgroup-wrap").hidden = $("#f-group").value !== "new";
+}
+$("#f-group").addEventListener("change", () => {
+  $("#f-newgroup-wrap").hidden = $("#f-group").value !== "new";
+  if ($("#f-group").value === "new") $("#f-newgroup").focus();
+});
+
+function openAppDialog(app = null, groupId = null) {
+  if (state.authRequired && !getToken()) { openSettings("apps"); return; }
+  editingId = app?.id ?? null;
+  $("#app-form").reset();
+  $("#app-error").textContent = "";
+  $("#app-dlg-title").textContent = app ? `Edit ${app.name}` : "Add an app";
+  $("#app-save").textContent = app ? "Save" : "Add app";
+  $("#app-delete").hidden = !app;
+  disarm($("#app-delete"));
+  fillGroupSelect(app?.group_id ?? groupId ?? state.groups[0]?.id);
+  $("#swatches").innerHTML = state.colours.map(c =>
+    `<input type="radio" name="colour" id="sw-${c}" value="${c}"><label for="sw-${c}" style="--sw:var(--c-${c})" title="${c}"></label>`).join("");
+  const colour = app?.colour ?? state.colours[allApps().length % state.colours.length];
+  $(`#sw-${colour}`).checked = true;
+  if (app) {
+    $("#f-name").value = app.name; $("#f-url").value = app.url; $("#f-icon").value = app.icon;
+    $("#f-check").checked = app.check; $("#f-checkurl").value = app.check_url;
+  }
+  appDlg.showModal();
+  $("#f-name").focus();
+}
+$("#add-btn").addEventListener("click", () => openAppDialog());
+$("#app-cancel").addEventListener("click", () => appDlg.close());
+
+$("#app-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const body = {
+    name: f.get("name"), url: f.get("url"), icon: f.get("icon"), colour: f.get("colour"),
+    check: $("#f-check").checked, check_url: f.get("check_url"),
+  };
+  if (f.get("group_id") === "new") body.group = f.get("group") || "Apps";
+  else body.group_id = +f.get("group_id");
+  try {
+    await api(editingId ? `/api/apps/${editingId}` : "/api/apps", { method: editingId ? "PATCH" : "POST", body });
+    appDlg.close();
+    toast(editingId ? `Saved ${body.name}` : `Added ${body.name}`);
+    await refresh();
+    setTimeout(loadStatus, 2500);
+  } catch (err) { $("#app-error").textContent = err.message; }
+});
+
+// Destructive buttons need a second click within 4 seconds.
+function arm(btn, label) {
+  if (btn.classList.contains("armed")) return true;
+  btn.dataset.label = btn.textContent; btn.textContent = label; btn.classList.add("armed");
+  clearTimeout(btn._t); btn._t = setTimeout(() => disarm(btn), 4000);
+  return false;
+}
+function disarm(btn) {
+  if (!btn.classList.contains("armed")) return;
+  btn.classList.remove("armed"); btn.textContent = btn.dataset.label; clearTimeout(btn._t);
+}
+$("#app-delete").addEventListener("click", async e => {
+  if (!arm(e.currentTarget, "Click again to delete")) return;
+  try {
+    await api(`/api/apps/${editingId}`, { method: "DELETE" });
+    appDlg.close(); toast("App deleted"); await refresh();
+  } catch (err) { $("#app-error").textContent = err.message; }
+});
+
+/* ——— settings drawer ——— */
+const drawer = $("#settings");
+let pendingLocation;
+
+function showLock(on) {
+  const locked = on && state.authRequired && !getToken();
+  $("#lock").hidden = !locked;
+  document.querySelectorAll("[data-panel]").forEach(p => (p.hidden = locked || p.dataset.panel !== currentTab));
+  $("#tabs").hidden = locked;
+  if (locked && drawer.open) $("#lock-pw").focus();
+}
+
+let currentTab = "general";
+function selectTab(name) {
+  currentTab = name;
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === name));
+  showLock(true);
+}
+$("#tabs").addEventListener("click", e => { const t = e.target.closest(".tab"); if (t) selectTab(t.dataset.tab); });
+
+function openSettings(tab = "general") {
+  fillGeneral(); renderManage();
+  $("#loc-results").innerHTML = ""; $("#loc-q").value = "";
+  drawer.showModal();
+  selectTab(tab);
+}
+$("#open-settings").addEventListener("click", () => openSettings());
+$("#manage-btn").addEventListener("click", () => openSettings("apps"));
+$("#settings-close").addEventListener("click", () => drawer.close());
+drawer.addEventListener("click", e => { if (e.target === drawer) drawer.close(); });
+
+$("#lock").addEventListener("submit", async e => {
+  e.preventDefault();
+  const pw = $("#lock-pw").value;
+  try {
+    await api("/api/login", { method: "POST", body: { password: pw } });
+    setToken(pw); $("#lock-pw").value = ""; $("#lock-error").textContent = "";
+    showLock(true);
+  } catch (err) { $("#lock-error").textContent = err.message; }
+});
+
+function locLabel(l) {
+  return l ? `<div><b>${esc(l.name)}</b><small>${l.latitude.toFixed(2)}, ${l.longitude.toFixed(2)}</small></div>` :
+    `<div><b>No location set</b><small>Search for your town below</small></div>`;
+}
+function fillGeneral() {
+  const s = state.settings;
+  pendingLocation = undefined;
+  $("#s-title").value = s.title;
+  $("#loc-now").innerHTML = locLabel(s.location);
+  $("#s-temp").value = s.temperature_unit;
+  $("#s-wind").value = s.wind_unit;
+  $("#s-headlines").value = s.headlines;
+  const sel = $("#s-search");
+  if (![...sel.options].some(o => o.value === s.search_url)) sel.add(new Option("Custom", s.search_url));
+  sel.value = s.search_url;
+  $("#s-clock").checked = s.clock_24h;
+  $("#s-newtab").checked = s.open_in_new_tab;
+  $("#s-status").checked = s.status_checks;
+  $("#s-interval").value = s.status_interval;
+  $("#general-error").textContent = "";
+}
+
+async function findPlace() {
+  const q = $("#loc-q").value.trim();
+  const box = $("#loc-results");
+  if (q.length < 2) { box.innerHTML = `<p class="note">Type at least two letters.</p>`; return; }
+  box.innerHTML = `<p class="note">Searching…</p>`;
+  try {
+    const { results } = await api("/api/geocode?q=" + encodeURIComponent(q));
+    box.innerHTML = results.length ? results.map((r, i) =>
+      `<button type="button" data-i="${i}"><b>${esc(r.name)}</b> <small>${esc(r.detail)} · ${r.latitude.toFixed(2)}, ${r.longitude.toFixed(2)}</small></button>`
+    ).join("") : `<p class="note">No places found for “${esc(q)}”.</p>`;
+    box.onclick = e => {
+      const b = e.target.closest("button[data-i]"); if (!b) return;
+      const r = results[+b.dataset.i];
+      const region = r.detail.split(", ")[0];
+      pendingLocation = { name: region && region !== r.name ? `${r.name}, ${region}` : r.name, latitude: r.latitude, longitude: r.longitude };
+      $("#loc-now").innerHTML = locLabel(pendingLocation) + `<span class="pill">Not saved yet</span>`;
+      box.innerHTML = "";
+    };
+  } catch (err) { box.innerHTML = `<p class="note">${esc(err.message)}</p>`; }
+}
+$("#loc-find").addEventListener("click", findPlace);
+$("#loc-q").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); findPlace(); } });
+
+$("#panel-general").addEventListener("submit", async e => {
+  e.preventDefault();
+  const body = {
+    title: $("#s-title").value, temperature_unit: $("#s-temp").value, wind_unit: $("#s-wind").value,
+    headlines: +$("#s-headlines").value, search_url: $("#s-search").value,
+    clock_24h: $("#s-clock").checked, open_in_new_tab: $("#s-newtab").checked,
+    status_checks: $("#s-status").checked, status_interval: +$("#s-interval").value,
+  };
+  if (pendingLocation !== undefined) body.location = pendingLocation;
+  try {
+    await api("/api/settings", { method: "PUT", body });
+    toast("Settings saved");
+    await refresh({ weather: true, news: true });
+    fillGeneral();
+  } catch (err) { $("#general-error").textContent = err.message; }
+});
+
+const ARROW_UP = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>`;
+const ARROW_DOWN = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+const PENCIL = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`;
+const BIN = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>`;
+
+function renderManage() {
+  const box = $("#manage-list");
+  if (!state.groups.length) { box.innerHTML = `<p class="note">No groups yet. Add a group below, or add an app and give it a new group.</p>`; return; }
+  box.innerHTML = state.groups.map((g, gi) => `
+    <div class="group-card" data-gid="${g.id}">
+      <div class="group-head">
+        <input value="${esc(g.name)}" data-rename="${g.id}" aria-label="Group name" maxlength="40">
+        <button class="icon-btn sm" type="button" data-gmove="-1" aria-label="Move ${esc(g.name)} up"${gi === 0 ? " disabled" : ""}>${ARROW_UP}</button>
+        <button class="icon-btn sm" type="button" data-gmove="1" aria-label="Move ${esc(g.name)} down"${gi === state.groups.length - 1 ? " disabled" : ""}>${ARROW_DOWN}</button>
+        <button class="icon-btn sm" type="button" data-gdel aria-label="Delete group ${esc(g.name)}" title="${g.apps.length ? "Move or delete its apps first" : "Delete group"}"${g.apps.length ? " disabled" : ""}>${BIN}</button>
+      </div>
+      ${g.apps.map((a, ai) => `
+        <div class="app-row" data-aid="${a.id}">
+          ${iconHTML(a, true)}
+          <span class="tile-text"><b>${esc(a.name)}</b><small>${esc(hostOf(a.url))}</small></span>
+          <span class="row-actions">
+            <button class="icon-btn sm" type="button" data-amove="-1" aria-label="Move ${esc(a.name)} up"${ai === 0 ? " disabled" : ""}>${ARROW_UP}</button>
+            <button class="icon-btn sm" type="button" data-amove="1" aria-label="Move ${esc(a.name)} down"${ai === g.apps.length - 1 ? " disabled" : ""}>${ARROW_DOWN}</button>
+            <button class="icon-btn sm" type="button" data-aedit aria-label="Edit ${esc(a.name)}">${PENCIL}</button>
+          </span>
+        </div>`).join("")}
+      <div class="group-foot"><button type="button" data-addto="${g.id}">+ Add app to ${esc(g.name)}</button></div>
+    </div>`).join("");
+}
+
+function swap(list, i, d) { const j = i + d; [list[i], list[j]] = [list[j], list[i]]; }
+$("#manage-list").addEventListener("click", async e => {
+  const card = e.target.closest(".group-card"); if (!card) return;
+  const g = state.groups.find(x => x.id === +card.dataset.gid);
+  const row = e.target.closest(".app-row");
+  const a = row && g.apps.find(x => x.id === +row.dataset.aid);
+  const btn = e.target.closest("button"); if (!btn) return;
+  try {
+    if (btn.dataset.gmove) {
+      swap(state.groups, state.groups.indexOf(g), +btn.dataset.gmove);
+      await api("/api/groups/order", { method: "POST", body: { ids: state.groups.map(x => x.id) } });
+    } else if (btn.dataset.amove) {
+      swap(g.apps, g.apps.indexOf(a), +btn.dataset.amove);
+      await api("/api/apps/order", { method: "POST", body: { ids: g.apps.map(x => x.id) } });
+    } else if ("gdel" in btn.dataset) {
+      await api(`/api/groups/${g.id}`, { method: "DELETE" }); toast(`Deleted ${g.name}`);
+    } else if ("aedit" in btn.dataset) {
+      return openAppDialog(a);
+    } else if (btn.dataset.addto) {
+      return openAppDialog(null, g.id);
+    } else return;
+    await refresh();
+  } catch (err) { toast(err.message, true); await refresh(); }
+});
+$("#manage-list").addEventListener("change", async e => {
+  const id = e.target.dataset.rename; if (!id) return;
+  try { await api(`/api/groups/${id}`, { method: "PATCH", body: { name: e.target.value } }); toast("Group renamed"); }
+  catch (err) { toast(err.message, true); }
+  await refresh();
+});
+$("#new-group").addEventListener("submit", async e => {
+  e.preventDefault();
+  try { await api("/api/groups", { method: "POST", body: { name: $("#ng-name").value } }); $("#ng-name").value = ""; await refresh(); }
+  catch (err) { toast(err.message, true); }
+});
+
+/* backup */
+$("#export").addEventListener("click", async () => {
+  try {
+    const data = await api("/api/export");
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: `homepage-backup-${new Date().toISOString().slice(0, 10)}.json` });
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) { toast(err.message, true); }
+});
+$("#import-file").addEventListener("change", e => { $("#import").disabled = !e.target.files.length; $("#import-error").textContent = ""; });
+$("#import").addEventListener("click", async e => {
+  if (!arm(e.currentTarget, "Click again to replace everything")) return;
+  disarm(e.currentTarget);
+  try {
+    const data = JSON.parse(await $("#import-file").files[0].text());
+    const res = await api("/api/import", { method: "POST", body: data });
+    toast(`Restored ${res.apps} apps in ${res.groups} groups`);
+    $("#import-file").value = ""; $("#import").disabled = true;
+    await refresh({ weather: true, news: true }); fillGeneral();
+  } catch (err) { $("#import-error").textContent = err instanceof SyntaxError ? "That file isn't valid JSON." : err.message; }
+});
+
+/* ——— boot ——— */
+async function refresh({ weather = false, news = false } = {}) {
+  const data = await api("/api/state");
+  Object.assign(state, { settings: data.settings, groups: data.groups, colours: data.colours, authRequired: data.auth_required });
+  document.title = data.settings.title;
+  tick(); renderApps();
+  if (drawer.open) renderManage();
+  if (weather) loadWeather();
+  if (news) loadNews();
+}
+
+refresh({ weather: true, news: true }).then(() => {
+  loadStatus();
+  setInterval(loadStatus, 20e3);
+  setInterval(loadWeather, 10 * 60e3);
+  setInterval(loadNews, 15 * 60e3);
+}).catch(err => {
+  $("#shelves").innerHTML = `<div class="empty"><h3>Can't reach the Home Base server</h3><p>${esc(err.message)}. Check that the container is running, then reload this page.</p></div>`;
+});
+</script>
+</body>
+</html>
