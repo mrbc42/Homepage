@@ -6,7 +6,14 @@ no API keys.
 
 ## Customise
 
-Open `index.html` and edit the `CONFIG` block near the bottom:
+Your own settings go in `config.local.js`, which is in `.gitignore` and never committed.
+Keep your location, app addresses and anything else personal there, not in `index.html`.
+
+```sh
+cp config.example.js config.local.js
+```
+
+Then edit `config.local.js`:
 
 - `location`: name, latitude and longitude for the weather
 - `units`: `celsius`/`fahrenheit` and `kmh`/`mph`
@@ -20,15 +27,15 @@ Open `index.html` and edit the `CONFIG` block near the bottom:
 `icon` is a name from https://dashboardicons.com, a full image URL, or left out to show the first letter.
 
 Apps added with the **+ Add app** button are saved in that browser only. Use **Copy config**
-to get lines you can paste into `CONFIG`.
+to get lines you can paste into `config.local.js`.
 
 ## Host it
 
-Any static web server works. With Docker:
+Any static web server works. From the repo folder, with Docker:
 
 ```sh
 docker run -d --name homepage --restart unless-stopped \
-  -p 8080:80 -v "$PWD/index.html:/usr/share/nginx/html/index.html:ro" nginx:alpine
+  -p 8080:80 -v "$PWD:/usr/share/nginx/html:ro" nginx:alpine
 ```
 
 Then open http://<server-ip>:8080.

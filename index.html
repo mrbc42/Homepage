@@ -383,7 +383,7 @@ textarea.export {
   <footer class="foot">
     <span>Weather and air quality: Open-Meteo</span>
     <span>Headlines: Hacker News</span>
-    <span>Edit <code>CONFIG</code> at the bottom of this file to change your location and permanent apps</span>
+    <span>Set your location and apps in <code>config.local.js</code></span>
   </footer>
 </main>
 
@@ -422,7 +422,7 @@ textarea.export {
 <dialog id="export-dlg">
   <div class="dlg">
     <h2>Your added apps</h2>
-    <p style="margin:0;color:var(--muted)">Apps added with the button are saved in this browser only. To keep them for good, paste these lines into the <code>apps</code> list in <code>CONFIG</code>.</p>
+    <p style="margin:0;color:var(--muted)">Apps added with the button are saved in this browser only. To keep them for good, paste these lines into the <code>apps</code> list in <code>config.local.js</code>.</p>
     <textarea class="export" id="export-text" readonly aria-label="Config for added apps"></textarea>
     <div class="dlg-actions">
       <button class="btn" type="button" id="export-close">Close</button>
@@ -433,16 +433,19 @@ textarea.export {
 
 <div class="toast" id="toast" hidden></div>
 
+<!-- Your own settings live in config.local.js, which is not committed to git. See config.example.js. -->
+<script src="config.local.js"></script>
 <script>
 /* ════════════════════════════════════════════════════════════════════
-   CONFIG — edit this block to make the page yours.
-   To add an app permanently, copy one line in `apps` and change it.
+   DEFAULT CONFIG — example values only. Don't put your own details here.
+   Copy config.example.js to config.local.js and edit that instead:
+   anything set there replaces the matching setting below.
    colour: tangerine · berry · teal · lime · sky · sun · violet · coral
    icon:   a name from https://dashboardicons.com (e.g. "jellyfin"),
            a full image URL, or leave it out to show the first letter.
    ════════════════════════════════════════════════════════════════════ */
 const CONFIG = {
-  location: { name: "Maryborough, QLD", latitude: -25.5375, longitude: 152.7019 },
+  location: { name: "London", latitude: 51.5072, longitude: -0.1276 },
   units: { temperature: "celsius", wind: "kmh" },   // "fahrenheit" · "mph"
   clock24h: true,
   searchUrl: "https://duckduckgo.com/?q=",
@@ -466,6 +469,7 @@ const CONFIG = {
     { name: "Uptime Kuma",    url: "http://192.168.1.10:3001",       group: "System", colour: "lime",     icon: "uptime-kuma" },
   ],
 };
+Object.assign(CONFIG, window.HOMEPAGE_CONFIG || {});
 /* ════════════════════════════ end of CONFIG ═════════════════════════ */
 
 const COLOURS = ["tangerine", "berry", "teal", "lime", "sky", "sun", "violet", "coral"];
