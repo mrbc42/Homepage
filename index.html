@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home Base</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: greeting + search band, then a weather hero beside a headlines card, then app tiles grouped by shelf */
+:root {
+  --bg: #f3f1fb;
+  --bg-glow-1: #ffd6e8;
+  --bg-glow-2: #c9f0ff;
+  --surface: #ffffff;
+  --surface-2: #f6f4fd;
+  --fg: #1d1838;
+  --muted: #6a6488;
+  --line: #e3dff3;
+  --focus: #ff5e8a;
+
+  /* tile colours — the whole page draws from these */
+  --c-tangerine: #ff7a1a;
+  --c-berry: #e8357a;
+  --c-teal: #0fa99a;
+  --c-lime: #6cbf1d;
+  --c-sky: #1f8fff;
+  --c-sun: #f2b705;
+  --c-violet: #8a4dff;
+  --c-coral: #ff5a5f;
+
+  --ok: #19b36b;
+  --down: #e5484d;
+  --unknown: #a7a2bf;
+
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --r-lg: 28px;
+  --r-md: 20px;
+  --r-sm: 12px;
+  --shadow: 0 1px 2px rgb(29 24 56 / .05), 0 8px 24px -12px rgb(29 24 56 / .18);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #130f26; --bg-glow-1: #3a1240; --bg-glow-2: #0b3047;
+    --surface: #1e1938; --surface-2: #262046; --fg: #f3f0ff; --muted: #a49dc6; --line: #332c58;
+    --c-sky: #4aa5ff; --c-violet: #a376ff; --c-berry: #ff4f93; --unknown: #6b6590;
+    --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 10px 30px -14px rgb(0 0 0 / .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #130f26; --bg-glow-1: #3a1240; --bg-glow-2: #0b3047;
+  --surface: #1e1938; --surface-2: #262046; --fg: #f3f0ff; --muted: #a49dc6; --line: #332c58;
+  --c-sky: #4aa5ff; --c-violet: #a376ff; --c-berry: #ff4f93; --unknown: #6b6590;
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 10px 30px -14px rgb(0 0 0 / .6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { min-height: 100%; }
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(60rem 30rem at 10% -10%, var(--bg-glow-1), transparent 60%),
+    radial-gradient(50rem 30rem at 100% 0%, var(--bg-glow-2), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--fg);
+  font: 400 15px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 10px; }
+
+.wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 28px;
+}
+
+/* ——— header ——— */
+.head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 20px; }
+.hello { min-width: 0; }
+.hello .date { font: 600 12px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.hello h1 {
+  margin: 8px 0 0;
+  font: 800 clamp(30px, 5vw, 52px)/1 var(--font-display);
+  letter-spacing: -.02em;
+  text-wrap: balance;
+}
+.hello h1 .clock {
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(90deg, var(--c-tangerine), var(--c-berry) 55%, var(--c-violet));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.search {
+  flex: 1 1 320px; max-width: 460px;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 6px 6px 18px; box-shadow: var(--shadow);
+}
+.search svg { flex: none; color: var(--muted); }
+.search input { flex: 1; min-width: 0; border: 0; background: none; padding: 8px 0; outline: none; }
+.search button {
+  border: 0; border-radius: 999px; padding: 9px 16px; cursor: pointer; font-weight: 600;
+  background: var(--fg); color: var(--bg);
+}
+
+/* ——— top row ——— */
+.top { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 900px) { .top { grid-template-columns: minmax(0, 1fr); } }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--shadow);
+  padding: 22px; min-width: 0;
+}
+.card-title {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: 0 0 14px; font: 700 18px/1.2 var(--font-display);
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 600 11px/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase;
+  padding: 6px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted);
+}
+
+/* weather hero — colour follows the sky */
+.weather {
+  --w1: var(--c-sun); --w2: var(--c-tangerine);
+  position: relative; overflow: hidden;
+  border-radius: var(--r-lg); padding: 24px; color: #fff;
+  background: linear-gradient(135deg, var(--w1), var(--w2));
+  box-shadow: var(--shadow); min-width: 0;
+  display: grid; gap: 20px;
+}
+.weather[data-sky="clear-night"] { --w1: #3b2a8f; --w2: #14105a; }
+.weather[data-sky="partly"]  { --w1: #ffb020; --w2: #2f8dff; }
+.weather[data-sky="cloudy"]  { --w1: #7b86b8; --w2: #4a5590; }
+.weather[data-sky="fog"]     { --w1: #9aa3c4; --w2: #6a6f9a; }
+.weather[data-sky="rain"], .weather[data-sky="drizzle"] { --w1: #12b5c9; --w2: #2a52d9; }
+.weather[data-sky="snow"]    { --w1: #7fd3ff; --w2: #6a7dff; }
+.weather[data-sky="storm"]   { --w1: #7a3cff; --w2: #2a1a6e; }
+.weather::after {
+  content: ""; position: absolute; width: 340px; height: 340px; right: -110px; top: -140px;
+  border-radius: 50%; background: rgb(255 255 255 / .14); pointer-events: none;
+}
+.w-now { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; position: relative; z-index: 1; }
+.w-icon { width: 92px; height: 92px; flex: none; filter: drop-shadow(0 6px 14px rgb(0 0 0 / .18)); }
+.w-temp { font: 800 clamp(56px, 9vw, 84px)/.9 var(--font-display); letter-spacing: -.04em; }
+.w-temp sup { font-size: .38em; vertical-align: top; position: relative; top: .3em; margin-left: 2px; }
+.w-desc { display: grid; gap: 4px; min-width: 0; }
+.w-desc strong { font: 700 22px/1.15 var(--font-display); }
+.w-desc span { opacity: .88; }
+.w-place { margin-left: auto; text-align: right; font-size: 13px; opacity: .9; display: grid; gap: 6px; justify-items: end; }
+.w-place .pill { background: rgb(255 255 255 / .2); color: #fff; }
+@media (max-width: 560px) { .w-place { margin-left: 0; text-align: left; justify-items: start; } }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; position: relative; z-index: 1; }
+.chip {
+  display: grid; gap: 2px; padding: 10px 14px; border-radius: var(--r-sm);
+  background: rgb(255 255 255 / .16); backdrop-filter: blur(6px); min-width: 92px;
+}
+.chip small { font: 600 10px/1.2 var(--font-body); letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
+.chip b { font: 600 15px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.hours {
+  display: flex; gap: 6px; overflow-x: auto; position: relative; z-index: 1;
+  padding-bottom: 4px; scrollbar-width: thin;
+}
+.hour {
+  flex: 0 0 auto; display: grid; justify-items: center; gap: 4px;
+  padding: 10px 10px; border-radius: var(--r-sm); min-width: 58px;
+  background: rgb(255 255 255 / .1);
+  font-variant-numeric: tabular-nums;
+}
+.hour:first-child { background: rgb(255 255 255 / .26); }
+.hour small { font-size: 12px; opacity: .85; }
+.hour svg { width: 28px; height: 28px; }
+.hour b { font: 600 14px/1 var(--font-mono); }
+.hour i { font: 400 11px/1 var(--font-mono); font-style: normal; opacity: .8; min-height: 11px; }
+
+.days { display: grid; gap: 4px; position: relative; z-index: 1; }
+.day {
+  display: grid; grid-template-columns: 54px 30px 44px minmax(60px, 1fr) 44px; align-items: center; gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.day svg { width: 26px; height: 26px; }
+.day .lo { text-align: right; font: 400 14px var(--font-mono); opacity: .8; }
+.day .hi { font: 600 14px var(--font-mono); }
+.range { position: relative; height: 8px; border-radius: 99px; background: rgb(255 255 255 / .18); }
+.range span {
+  position: absolute; top: 0; bottom: 0; border-radius: 99px;
+  background: linear-gradient(90deg, #bfeaff, #fff3b0, #ffb36b);
+}
+
+/* headlines */
+.news { display: grid; align-content: start; }
+.news ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: n; }
+.news li a {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start;
+  padding: 10px 8px; border-radius: var(--r-sm); text-decoration: none;
+}
+.news li a:hover { background: var(--surface-2); }
+.news li a::before {
+  counter-increment: n; content: counter(n);
+  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px;
+  font: 600 12px/1 var(--font-mono); color: #fff; background: var(--dot, var(--c-tangerine));
+}
+.news li:nth-child(6n+2) { --dot: var(--c-berry); }
+.news li:nth-child(6n+3) { --dot: var(--c-violet); }
+.news li:nth-child(6n+4) { --dot: var(--c-sky); }
+.news li:nth-child(6n+5) { --dot: var(--c-teal); }
+.news li:nth-child(6n+6) { --dot: var(--c-lime); }
+.news .t { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.news .m { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; font-family: var(--font-mono); }
+
+/* ——— apps ——— */
+.apps-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.apps-head h2 { margin: 0; font: 800 28px/1 var(--font-display); letter-spacing: -.02em; }
+.apps-head .status-sum { color: var(--muted); font-size: 14px; margin-top: 6px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 9px 16px; font-weight: 600; box-shadow: var(--shadow);
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { border: 0; color: #fff; background: linear-gradient(135deg, var(--c-berry), var(--c-tangerine)); }
+.btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+.shelf { display: grid; gap: 12px; }
+.shelf h3 {
+  margin: 0; display: flex; align-items: center; gap: 10px;
+  font: 600 12px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+.shelf h3::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+
+.tile {
+  --c: var(--c-sky);
+  position: relative; display: flex; align-items: center; gap: 14px;
+  padding: 14px; border-radius: var(--r-md); text-decoration: none; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.tile::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c) 14%, transparent), transparent 60%);
+}
+.tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 55%, var(--line)); box-shadow: 0 14px 30px -14px color-mix(in srgb, var(--c) 70%, transparent); }
+.ico {
+  position: relative; flex: none; width: 50px; height: 50px; border-radius: 15px;
+  display: grid; place-items: center; overflow: hidden;
+  background: var(--c); color: #fff; font: 800 20px/1 var(--font-display);
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / .12);
+}
+.ico img { width: 32px; height: 32px; object-fit: contain; }
+.ico.has-img { background: color-mix(in srgb, var(--c) 18%, var(--surface)); }
+.tile-text { position: relative; min-width: 0; display: grid; gap: 2px; }
+.tile-text b { font: 700 16px/1.2 var(--font-display); overflow-wrap: anywhere; }
+.tile-text small { color: var(--muted); font: 400 12px/1.3 var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot {
+  position: absolute; top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--unknown);
+}
+.dot[data-s="up"] { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 22%, transparent); }
+.dot[data-s="down"] { background: var(--down); box-shadow: 0 0 0 4px color-mix(in srgb, var(--down) 22%, transparent); }
+.remove {
+  position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--surface); background: var(--down); color: #fff; cursor: pointer;
+  display: none; place-items: center; font-weight: 700; line-height: 1; padding: 0;
+}
+.editing .tile.custom .remove { display: grid; }
+.editing .tile.custom { animation: wiggle .5s ease-in-out infinite alternate; }
+@keyframes wiggle { from { transform: rotate(-.6deg); } to { transform: rotate(.6deg); } }
+@media (prefers-reduced-motion: reduce) { .tile, .editing .tile.custom { transition: none; animation: none; } }
+
+.add-tile {
+  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 80px;
+  border: 2px dashed var(--line); border-radius: var(--r-md); background: transparent;
+  color: var(--muted); font-weight: 600; cursor: pointer;
+}
+.add-tile:hover { border-color: var(--c-berry); color: var(--c-berry); }
+
+.foot { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.foot code { font-family: var(--font-mono); }
+
+/* dialog */
+dialog {
+  width: min(460px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 0; background: var(--surface); color: var(--fg); box-shadow: 0 30px 80px -20px rgb(0 0 0 / .45);
+}
+dialog::backdrop { background: rgb(20 15 40 / .45); backdrop-filter: blur(3px); }
+.dlg { padding: 24px; display: grid; gap: 14px; }
+.dlg h2 { margin: 0; font: 800 24px/1.1 var(--font-display); }
+.field { display: grid; gap: 6px; }
+.field label { font-weight: 600; font-size: 13px; }
+.field input, .field select {
+  width: 100%; padding: 10px 12px; border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: var(--surface-2);
+}
+.field .hint { color: var(--muted); font-size: 12px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatches input { position: absolute; opacity: 0; pointer-events: none; }
+.swatches label {
+  width: 34px; height: 34px; border-radius: 11px; cursor: pointer; background: var(--sw);
+  border: 3px solid transparent; outline: 2px solid transparent;
+}
+.swatches input:checked + label { border-color: var(--surface); outline-color: var(--sw); }
+.swatches input:focus-visible + label { outline: 3px solid var(--focus); }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--fg); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 600;
+  box-shadow: var(--shadow); z-index: 20;
+}
+textarea.export {
+  width: 100%; min-height: 160px; font: 12px/1.5 var(--font-mono); padding: 10px;
+  border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); color: var(--fg);
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="head">
+    <div class="hello">
+      <div class="date" id="date">Thursday 22 October</div>
+      <h1><span id="greet">Good afternoon</span> · <span class="clock" id="clock">14:05</span></h1>
+    </div>
+    <form class="search" id="search" role="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" name="q" type="search" placeholder="Search the web…" autocomplete="off" aria-label="Search the web">
+      <button type="submit">Search</button>
+    </form>
+  </header>
+
+  <section class="top">
+    <article class="weather" id="weather" data-sky="partly" aria-live="polite">
+      <div class="w-now">
+        <div class="w-icon" id="w-icon"></div>
+        <div class="w-temp" id="w-temp">–<sup>°</sup></div>
+        <div class="w-desc"><strong id="w-desc">Loading weather…</strong><span id="w-feels"></span></div>
+        <div class="w-place"><span id="w-place"></span><span class="pill" id="w-src">Open-Meteo</span></div>
+      </div>
+      <div class="chips" id="w-chips"></div>
+      <div class="hours" id="w-hours" aria-label="Next 12 hours"></div>
+      <div class="days" id="w-days" aria-label="Next 5 days"></div>
+    </article>
+
+    <article class="card news" id="news">
+      <h2 class="card-title">Headlines <span class="pill" id="news-src">Hacker News</span></h2>
+      <ol id="news-list"></ol>
+    </article>
+  </section>
+
+  <section id="apps" style="display:grid;gap:22px">
+    <div class="apps-head">
+      <div>
+        <h2>My apps</h2>
+        <div class="status-sum" id="status-sum">Checking which apps are reachable…</div>
+      </div>
+      <div class="btns">
+        <button class="btn" id="edit-btn" type="button" aria-pressed="false">Edit</button>
+        <button class="btn" id="export-btn" type="button">Copy config</button>
+        <button class="btn primary" id="add-btn" type="button">+ Add app</button>
+      </div>
+    </div>
+    <div id="shelves" style="display:grid;gap:26px"></div>
+  </section>
+
+  <footer class="foot">
+    <span>Weather and air quality: Open-Meteo</span>
+    <span>Headlines: Hacker News</span>
+    <span>Edit <code>CONFIG</code> at the bottom of this file to change your location and permanent apps</span>
+  </footer>
+</main>
+
+<dialog id="dlg">
+  <form class="dlg" id="add-form" method="dialog">
+    <h2>Add an app</h2>
+    <div class="field">
+      <label for="f-name">Name</label>
+      <input id="f-name" name="name" required placeholder="Paperless">
+    </div>
+    <div class="field">
+      <label for="f-url">Address</label>
+      <input id="f-url" name="url" required placeholder="http://192.168.1.20:8000">
+    </div>
+    <div class="field">
+      <label for="f-group">Group</label>
+      <input id="f-group" name="group" list="groups" placeholder="Home">
+      <datalist id="groups"></datalist>
+    </div>
+    <div class="field">
+      <label for="f-icon">Icon name (optional)</label>
+      <input id="f-icon" name="icon" placeholder="paperless-ngx">
+      <span class="hint">Any name from the dashboard-icons collection, or a full image URL. Leave blank to use the first letter.</span>
+    </div>
+    <div class="field">
+      <span style="font-weight:600;font-size:13px">Colour</span>
+      <div class="swatches" id="swatches"></div>
+    </div>
+    <div class="dlg-actions">
+      <button class="btn" type="button" id="cancel">Cancel</button>
+      <button class="btn primary" type="submit">Add app</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="export-dlg">
+  <div class="dlg">
+    <h2>Your added apps</h2>
+    <p style="margin:0;color:var(--muted)">Apps added with the button are saved in this browser only. To keep them for good, paste these lines into the <code>apps</code> list in <code>CONFIG</code>.</p>
+    <textarea class="export" id="export-text" readonly aria-label="Config for added apps"></textarea>
+    <div class="dlg-actions">
+      <button class="btn" type="button" id="export-close">Close</button>
+      <button class="btn primary" type="button" id="export-copy">Copy</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   CONFIG — edit this block to make the page yours.
+   To add an app permanently, copy one line in `apps` and change it.
+   colour: tangerine · berry · teal · lime · sky · sun · violet · coral
+   icon:   a name from https://dashboardicons.com (e.g. "jellyfin"),
+           a full image URL, or leave it out to show the first letter.
+   ════════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  location: { name: "Maryborough, QLD", latitude: -25.5375, longitude: 152.7019 },
+  units: { temperature: "celsius", wind: "kmh" },   // "fahrenheit" · "mph"
+  clock24h: true,
+  searchUrl: "https://duckduckgo.com/?q=",
+  headlines: 8,             // number of Hacker News stories; 0 hides the card
+  statusChecks: true,       // ping each app to show a green/red dot
+  openInNewTab: false,
+
+  // Example apps — replace the addresses with your own.
+  apps: [
+    { name: "Home Assistant", url: "http://homeassistant.local:8123", group: "Home",  colour: "sky",       icon: "home-assistant" },
+    { name: "Frigate",        url: "http://192.168.1.10:5000",       group: "Home",  colour: "coral",     icon: "frigate" },
+    { name: "Nextcloud",      url: "https://cloud.example.lan",      group: "Home",  colour: "teal",      icon: "nextcloud" },
+    { name: "Immich",         url: "http://192.168.1.10:2283",       group: "Home",  colour: "berry",     icon: "immich" },
+    { name: "Jellyfin",       url: "http://192.168.1.10:8096",       group: "Media", colour: "violet",    icon: "jellyfin" },
+    { name: "Sonarr",         url: "http://192.168.1.10:8989",       group: "Media", colour: "sky",       icon: "sonarr" },
+    { name: "Radarr",         url: "http://192.168.1.10:7878",       group: "Media", colour: "sun",       icon: "radarr" },
+    { name: "Audiobookshelf", url: "http://192.168.1.10:13378",      group: "Media", colour: "tangerine", icon: "audiobookshelf" },
+    { name: "Proxmox",        url: "https://192.168.1.2:8006",       group: "System", colour: "tangerine", icon: "proxmox" },
+    { name: "Pi-hole",        url: "http://192.168.1.3/admin",       group: "System", colour: "coral",    icon: "pi-hole" },
+    { name: "Portainer",      url: "https://192.168.1.10:9443",      group: "System", colour: "teal",     icon: "portainer" },
+    { name: "Uptime Kuma",    url: "http://192.168.1.10:3001",       group: "System", colour: "lime",     icon: "uptime-kuma" },
+  ],
+};
+/* ════════════════════════════ end of CONFIG ═════════════════════════ */
+
+const COLOURS = ["tangerine", "berry", "teal", "lime", "sky", "sun", "violet", "coral"];
+const ICON_CDN = n => `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/${n}.svg`;
+const STORE_KEY = "homebase.customApps";
+// On claude.ai the page runs in a sandbox that blocks network calls, so it shows sample data there.
+const PREVIEW = /(^|\.)claude(usercontent)?\.(ai|com)$/.test(location.hostname) || location.protocol === "about:";
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2200);
+}
+function load(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch { return false; } }
+
+/* ——— clock ——— */
+function tick() {
+  const d = new Date(), h = d.getHours();
+  $("#greet").textContent = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  $("#clock").textContent = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: !CONFIG.clock24h });
+  $("#date").textContent = d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
+}
+tick(); setInterval(tick, 1000);
+
+$("#search").addEventListener("submit", e => {
+  e.preventDefault();
+  const q = $("#q").value.trim(); if (!q) return;
+  const url = CONFIG.searchUrl + encodeURIComponent(q);
+  if (PREVIEW) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
+  else location.href = url;
+});
+
+/* ——— weather ——— */
+const WMO = c =>
+  c === 0 ? ["clear", "Clear sky"] : c === 1 ? ["partly", "Mainly clear"] : c === 2 ? ["partly", "Partly cloudy"] :
+  c === 3 ? ["cloudy", "Overcast"] : c <= 48 ? ["fog", "Fog"] : c <= 57 ? ["drizzle", "Drizzle"] :
+  c <= 67 ? ["rain", c >= 65 ? "Heavy rain" : "Rain"] : c <= 77 ? ["snow", "Snow"] :
+  c <= 82 ? ["rain", "Rain showers"] : c <= 86 ? ["snow", "Snow showers"] : ["storm", "Thunderstorm"];
+
+function wIcon(kind, day = true) {
+  const sun = `<circle cx="32" cy="30" r="11" fill="#FFD43B"/><g stroke="#FFD43B" stroke-width="4" stroke-linecap="round">${[0,45,90,135,180,225,270,315].map(a => {
+    const r = a * Math.PI / 180; return `<line x1="${32 + Math.cos(r) * 16}" y1="${30 + Math.sin(r) * 16}" x2="${32 + Math.cos(r) * 21}" y2="${30 + Math.sin(r) * 21}"/>`; }).join("")}</g>`;
+  const moon = `<path d="M40 14a16 16 0 1 0 12 26A13 13 0 0 1 40 14z" fill="#FFF3C4"/>`;
+  const cloud = (fill = "#fff", dx = 0, dy = 0) => `<path transform="translate(${dx} ${dy})" d="M20 52h28a11 11 0 0 0 0-22 15 15 0 0 0-28 4 9 9 0 0 0 0 18z" fill="${fill}"/>`;
+  const drops = n => Array.from({ length: n }, (_, i) => `<line x1="${24 + i * 9}" y1="56" x2="${21 + i * 9}" y2="${n > 2 ? 63 : 61}" stroke="#BDEBFF" stroke-width="3.5" stroke-linecap="round"/>`).join("");
+  const flakes = [24, 34, 44].map(x => `<circle cx="${x}" cy="59" r="2.8" fill="#fff"/>`).join("");
+  const body = {
+    clear: day ? sun : moon,
+    partly: `<g transform="translate(6 -6) scale(.8)">${day ? sun : moon}</g>${cloud("#fff", 0, 4)}`,
+    cloudy: `${cloud("#DDE3F7", 8, -6)}${cloud("#fff", 0, 2)}`,
+    fog: `${cloud("#fff", 0, -6)}<g stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity=".85"><line x1="14" y1="54" x2="50" y2="54"/><line x1="20" y1="61" x2="56" y2="61"/></g>`,
+    drizzle: `${cloud("#fff", 0, -6)}${drops(2)}`,
+    rain: `${cloud("#fff", 0, -6)}${drops(3)}`,
+    snow: `${cloud("#fff", 0, -6)}${flakes}`,
+    storm: `${cloud("#E4DCFF", 0, -6)}<path d="M34 46l-7 11h7l-4 9 11-14h-7l4-6z" fill="#FFD43B"/>`,
+  }[kind];
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${body}</svg>`;
+}
+
+const AQI = v => v == null ? "–" : v <= 20 ? `${v} Good` : v <= 40 ? `${v} Fair` : v <= 60 ? `${v} Moderate` : v <= 80 ? `${v} Poor` : `${v} Very poor`;
+const hhmm = iso => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: !CONFIG.clock24h });
+
+function renderWeather(w, aq, sample) {
+  const c = w.current, [kind, label] = WMO(c.weather_code), day = !!c.is_day;
+  const tU = w.current_units.temperature_2m.replace("°", ""), deg = "°";
+  const el = $("#weather");
+  el.dataset.sky = kind === "clear" && !day ? "clear-night" : kind;
+  $("#w-icon").innerHTML = wIcon(kind, day);
+  $("#w-temp").innerHTML = `${Math.round(c.temperature_2m)}<sup>${deg}${esc(tU)}</sup>`;
+  $("#w-desc").textContent = label;
+  $("#w-feels").textContent = `Feels like ${Math.round(c.apparent_temperature)}${deg} · High ${Math.round(w.daily.temperature_2m_max[0])}${deg} · Low ${Math.round(w.daily.temperature_2m_min[0])}${deg}`;
+  $("#w-place").textContent = CONFIG.location.name;
+  $("#w-src").textContent = sample ? "Sample data" : "Open-Meteo";
+
+  const chips = [
+    ["Wind", `${Math.round(c.wind_speed_10m)} ${w.current_units.wind_speed_10m}`],
+    ["Humidity", `${c.relative_humidity_2m}%`],
+    ["Rain chance", `${w.daily.precipitation_probability_max[0] ?? 0}%`],
+    ["UV index", `${Math.round(w.daily.uv_index_max[0] ?? 0)}`],
+    ["Air quality", AQI(aq?.current?.european_aqi)],
+    ["Sunrise", hhmm(w.daily.sunrise[0])],
+    ["Sunset", hhmm(w.daily.sunset[0])],
+  ];
+  $("#w-chips").innerHTML = chips.map(([k, v]) => `<div class="chip"><small>${k}</small><b>${esc(v)}</b></div>`).join("");
+
+  const now = Date.now();
+  let start = w.hourly.time.findIndex(t => new Date(t).getTime() > now - 3600e3);
+  if (start < 0) start = 0;
+  $("#w-hours").innerHTML = w.hourly.time.slice(start, start + 12).map((t, i) => {
+    const j = start + i, hr = new Date(t).getHours(), p = w.hourly.precipitation_probability[j];
+    return `<div class="hour"><small>${i === 0 ? "Now" : String(hr).padStart(2, "0")}</small>${wIcon(WMO(w.hourly.weather_code[j])[0], hr >= 7 && hr < 19)}<b>${Math.round(w.hourly.temperature_2m[j])}°</b><i>${p >= 20 ? p + "%" : ""}</i></div>`;
+  }).join("");
+
+  const d = w.daily, lo = Math.min(...d.temperature_2m_min.slice(1, 6)), hi = Math.max(...d.temperature_2m_max.slice(1, 6)), span = Math.max(1, hi - lo);
+  $("#w-days").innerHTML = d.time.slice(1, 6).map((t, k) => {
+    const i = k + 1, a = (d.temperature_2m_min[i] - lo) / span * 100, b = (d.temperature_2m_max[i] - lo) / span * 100;
+    return `<div class="day"><span>${new Date(t + "T12:00").toLocaleDateString([], { weekday: "short" })}</span>${wIcon(WMO(d.weather_code[i])[0])}<span class="lo">${Math.round(d.temperature_2m_min[i])}°</span><div class="range"><span style="left:${a}%;right:${100 - b}%"></span></div><span class="hi">${Math.round(d.temperature_2m_max[i])}°</span></div>`;
+  }).join("");
+}
+
+function sampleWeather() {
+  const base = new Date(); base.setMinutes(0, 0, 0);
+  const hrs = Array.from({ length: 48 }, (_, i) => new Date(base.getTime() + (i - 1) * 3600e3));
+  const iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  const days = Array.from({ length: 6 }, (_, i) => iso(new Date(base.getTime() + i * 864e5)).slice(0, 10));
+  return {
+    current: { temperature_2m: 14.2, apparent_temperature: 12.6, relative_humidity_2m: 71, weather_code: 2, wind_speed_10m: 17, is_day: 1 },
+    current_units: { temperature_2m: "°C", wind_speed_10m: "km/h" },
+    hourly: {
+      time: hrs.map(iso),
+      temperature_2m: hrs.map(d => 11 + 4 * Math.sin((d.getHours() - 9) / 24 * 2 * Math.PI)),
+      weather_code: hrs.map((d, i) => [2, 2, 3, 3, 61, 61, 80, 3, 2, 1, 0, 0][i % 12]),
+      precipitation_probability: hrs.map((d, i) => [5, 10, 20, 35, 70, 80, 55, 30, 15, 5, 0, 0][i % 12]),
+    },
+    daily: {
+      time: days,
+      weather_code: [2, 61, 3, 0, 80, 1],
+      temperature_2m_max: [16, 13, 14, 17, 12, 15],
+      temperature_2m_min: [9, 8, 7, 6, 7, 8],
+      precipitation_probability_max: [35, 80, 20, 0, 65, 10],
+      uv_index_max: [2.4, 1.1, 1.8, 3.2, 1, 2.6],
+      sunrise: days.map(t => t + "T07:31"), sunset: days.map(t => t + "T17:52"),
+    },
+  };
+}
+
+async function loadWeather() {
+  if (PREVIEW) return renderWeather(sampleWeather(), { current: { european_aqi: 24 } }, true);
+  const { latitude: la, longitude: lo } = CONFIG.location;
+  const u = CONFIG.units;
+  const q = `latitude=${la}&longitude=${lo}&timezone=auto`;
+  try {
+    const [w, aq] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?${q}&forecast_days=6&temperature_unit=${u.temperature}&wind_speed_unit=${u.wind}` +
+        `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day` +
+        `&hourly=temperature_2m,weather_code,precipitation_probability` +
+        `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max`).then(r => r.json()),
+      fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${q}&current=european_aqi`).then(r => r.json()).catch(() => null),
+    ]);
+    renderWeather(w, aq, false);
+  } catch {
+    $("#w-desc").textContent = "Weather unavailable";
+    $("#w-feels").textContent = "Couldn't reach Open-Meteo. Check your internet connection; the page retries every 15 minutes.";
+  }
+}
+loadWeather(); setInterval(loadWeather, 15 * 60e3);
+
+/* ——— headlines ——— */
+const ago = s => { const m = Math.round((Date.now() / 1000 - s) / 60); return m < 60 ? `${m}m ago` : `${Math.round(m / 60)}h ago`; };
+async function loadNews() {
+  const n = CONFIG.headlines;
+  if (!n) return ($("#news").hidden = true);
+  const list = $("#news-list");
+  if (PREVIEW) {
+    $("#news-src").textContent = "Sample";
+    const now = Date.now() / 1000;
+    list.innerHTML = [
+      "Live stories from Hacker News appear here when you host this page",
+      "Show HN: A self-hosted RSS reader in one binary",
+      "Running Home Assistant on a low-power mini PC",
+      "Notes on backing up a homelab with restic",
+      "Why I moved my photos from the cloud to Immich",
+      "A field guide to Wi-Fi channel planning",
+    ].map((t, i) => `<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener"><span><span class="t">${t}</span><span class="m">${120 + i * 47} points · ${ago(now - (i + 1) * 3100)}</span></span></a></li>`).join("");
+    return;
+  }
+  try {
+    const ids = (await fetch("https://hacker-news.firebaseio.com/v0/topstories.json").then(r => r.json())).slice(0, n);
+    const items = await Promise.all(ids.map(id => fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())));
+    list.innerHTML = items.filter(Boolean).map(it => {
+      const href = it.url || `https://news.ycombinator.com/item?id=${it.id}`;
+      const host = it.url ? new URL(it.url).hostname.replace(/^www\./, "") : "news.ycombinator.com";
+      return `<li><a href="${esc(href)}" target="_blank" rel="noopener"><span><span class="t">${esc(it.title)}</span><span class="m">${it.score} points · ${ago(it.time)} · ${esc(host)}</span></span></a></li>`;
+    }).join("");
+  } catch {
+    list.innerHTML = `<li style="color:var(--muted);padding:8px">Couldn't load headlines. The page tries again in 30 minutes.</li>`;
+  }
+}
+loadNews(); setInterval(loadNews, 30 * 60e3);
+
+/* ——— apps ——— */
+let custom = load(STORE_KEY, []);
+const allApps = () => [...CONFIG.apps.map(a => ({ ...a, custom: false })), ...custom.map((a, i) => ({ ...a, custom: true, idx: i }))];
+const colourVar = c => `var(--c-${COLOURS.includes(c) ? c : "sky"})`;
+const hostOf = u => { try { const x = new URL(u); return x.host + (x.pathname.length > 1 ? x.pathname : ""); } catch { return u; } };
+
+function tileHTML(a, i) {
+  const src = a.icon ? (/^(https?:|data:|\/)/.test(a.icon) ? a.icon : ICON_CDN(a.icon)) : "";
+  const letter = esc((a.name || "?").trim()[0].toUpperCase());
+  const target = CONFIG.openInNewTab || PREVIEW ? ` target="_blank" rel="noopener"` : "";
+  return `<a class="tile${a.custom ? " custom" : ""}" href="${esc(a.url)}"${target} style="--c:${colourVar(a.colour)}" data-url="${esc(a.url)}">
+    <span class="ico${src ? " has-img" : ""}">${src ? `<img src="${esc(src)}" alt="" loading="lazy" data-letter="${letter}">` : letter}</span>
+    <span class="tile-text"><b>${esc(a.name)}</b><small>${esc(hostOf(a.url))}</small></span>
+    <span class="dot" title="Not checked"></span>
+    ${a.custom ? `<button class="remove" type="button" data-idx="${a.idx}" aria-label="Remove ${esc(a.name)}">×</button>` : ""}
+  </a>`;
+}
+
+function renderApps() {
+  const groups = new Map();
+  for (const a of allApps()) {
+    const g = a.group?.trim() || "Other";
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(a);
+  }
+  $("#shelves").innerHTML = [...groups].map(([g, apps]) =>
+    `<div class="shelf"><h3>${esc(g)}</h3><div class="grid">${apps.map(tileHTML).join("")}</div></div>`
+  ).join("") + `<div class="grid"><button class="add-tile" type="button" id="add-tile">+ Add an app</button></div>`;
+  $("#groups").innerHTML = [...groups.keys()].map(g => `<option value="${esc(g)}">`).join("");
+  // Icons that fail to load fall back to the coloured first letter.
+  document.querySelectorAll(".ico img").forEach(img => img.addEventListener("error", () => {
+    const box = img.parentElement; box.classList.remove("has-img"); box.textContent = img.dataset.letter;
+  }, { once: true }));
+  $("#add-tile").addEventListener("click", openAdd);
+  checkStatus();
+}
+
+async function ping(url) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 4000);
+  try { await fetch(url, { mode: "no-cors", cache: "no-store", signal: ctl.signal }); return true; }
+  catch { return false; } finally { clearTimeout(t); }
+}
+async function checkStatus() {
+  const sum = $("#status-sum");
+  const tiles = [...document.querySelectorAll(".tile")];
+  if (!CONFIG.statusChecks || PREVIEW) {
+    sum.textContent = PREVIEW
+      ? `${tiles.length} apps · status dots go green or red once you host this page on your network`
+      : `${tiles.length} apps`;
+    return;
+  }
+  const res = await Promise.all(tiles.map(async t => {
+    const up = await ping(t.dataset.url), dot = t.querySelector(".dot");
+    dot.dataset.s = up ? "up" : "down"; dot.title = up ? "Reachable" : "Not reachable";
+    return up;
+  }));
+  const up = res.filter(Boolean).length;
+  sum.textContent = up === tiles.length ? `All ${up} apps are reachable` : `${up} of ${tiles.length} apps reachable`;
+}
+setInterval(checkStatus, 5 * 60e3);
+
+/* add / edit / export */
+const dlg = $("#dlg");
+$("#swatches").innerHTML = COLOURS.map((c, i) =>
+  `<input type="radio" name="colour" id="sw-${c}" value="${c}"${i === 0 ? " checked" : ""}><label for="sw-${c}" style="--sw:var(--c-${c})" title="${c}"></label>`).join("");
+function openAdd() {
+  $("#add-form").reset();
+  const next = COLOURS[allApps().length % COLOURS.length];
+  $(`#sw-${next}`).checked = true;
+  dlg.showModal(); $("#f-name").focus();
+}
+$("#add-btn").addEventListener("click", openAdd);
+$("#cancel").addEventListener("click", () => dlg.close());
+$("#add-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  let url = f.get("url").trim();
+  if (!/^[a-z]+:\/\//i.test(url)) url = "http://" + url;
+  const app = { name: f.get("name").trim(), url, group: f.get("group").trim() || "Other", colour: f.get("colour") };
+  if (f.get("icon").trim()) app.icon = f.get("icon").trim();
+  custom.push(app);
+  const kept = save(STORE_KEY, custom);
+  dlg.close(); renderApps();
+  toast(kept ? `Added ${app.name}` : `Added ${app.name} for this visit (browser storage is off)`);
+});
+
+$("#edit-btn").addEventListener("click", e => {
+  const on = e.currentTarget.getAttribute("aria-pressed") !== "true";
+  e.currentTarget.setAttribute("aria-pressed", on);
+  e.currentTarget.textContent = on ? "Done" : "Edit";
+  $("#apps").classList.toggle("editing", on);
+  if (on && !custom.length) toast("Only apps added with the button can be removed here");
+});
+$("#shelves").addEventListener("click", e => {
+  const btn = e.target.closest(".remove");
+  if (btn) {
+    e.preventDefault();
+    const [gone] = custom.splice(+btn.dataset.idx, 1);
+    save(STORE_KEY, custom); renderApps(); toast(`Removed ${gone.name}`);
+  } else if ($("#apps").classList.contains("editing") && e.target.closest(".tile")) {
+    e.preventDefault();
+  }
+});
+
+$("#export-btn").addEventListener("click", () => {
+  const lines = custom.map(a => "    " + JSON.stringify(a).replace(/"(\w+)":/g, "$1: ").replace(/,(?=\w+: )/g, ", ") + ",");
+  $("#export-text").value = lines.length ? lines.join("\n") : "// You haven't added any apps with the button yet.";
+  $("#export-dlg").showModal();
+});
+$("#export-close").addEventListener("click", () => $("#export-dlg").close());
+$("#export-copy").addEventListener("click", () => {
+  const ta = $("#export-text");
+  navigator.clipboard?.writeText(ta.value).then(() => toast("Copied"), () => { ta.select(); toast("Press Ctrl+C to copy"); })
+    ?? (ta.select(), toast("Press Ctrl+C to copy"));
+});
+
+renderApps();
+</script>
+</body>
+</html>
