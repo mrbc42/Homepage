@@ -17,7 +17,10 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -41,6 +44,8 @@ DEFAULT_SETTINGS = {
     "clock_24h": True,
     "search_url": "https://duckduckgo.com/?q=",
     "headlines": 8,
+    "feed_title": "ABC News",
+    "feed_url": "https://www.abc.net.au/news/feed/51120/rss.xml",
     "open_in_new_tab": False,
     "status_checks": True,
     "status_interval": 60,
@@ -201,6 +206,10 @@ def clean_settings(patch):
             out[key] = bool(value)
         elif key == "search_url":
             out[key] = clean_url(value, "Search address")
+        elif key == "feed_title":
+            out[key] = clean_text(value, "Feed name", 40, required=False) or "News"
+        elif key == "feed_url":
+            out[key] = clean_url(value, "Feed address", required=False)
         elif key == "headlines":
             n = int(value)
             if not 0 <= n <= 20:
@@ -338,6 +347,68 @@ def headlines(count):
         ]
 
     return {"items": cache.get("headlines", 900, load)[:count]}
+
+
+def _feed_time(text):
+    if not text:
+        return 0
+    text = text.strip()
+    try:
+        return int(parsedate_to_datetime(text).timestamp())  # RSS: "Thu, 23 Oct 2026 04:10:00 +1000"
+    except (TypeError, ValueError):
+        pass
+    try:
+        dt = datetime.fromisoformat(text.replace("Z", "+00:00"))  # Atom: ISO 8601
+        return int((dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).timestamp())
+    except ValueError:
+        return 0
+
+
+def _local(tag):
+    return tag.rsplit("}", 1)[-1]
+
+
+def parse_feed(raw):
+    """Read RSS 2.0, RSS 1.0 or Atom into a list of {title, url, time}."""
+    root = ET.fromstring(raw)
+    items = []
+    for el in root.iter():
+        if _local(el.tag) not in ("item", "entry"):
+            continue
+        fields = {_local(c.tag): c for c in el}
+        title = (fields.get("title").text or "").strip() if "title" in fields else ""
+        link = ""
+        for c in el:
+            if _local(c.tag) == "link":
+                href = c.get("href")
+                if href and c.get("rel", "alternate") == "alternate":
+                    link = href
+                    break
+                if not href and (c.text or "").strip():
+                    link = c.text.strip()
+                    break
+        if not link and "guid" in fields and (fields["guid"].text or "").startswith("http"):
+            link = fields["guid"].text.strip()
+        when = next((fields[k].text for k in ("pubDate", "published", "updated", "date") if k in fields), "")
+        if title and link.startswith(("http://", "https://")):
+            items.append({"title": title, "url": link, "time": _feed_time(when)})
+    return items
+
+
+def feed(url, count):
+    if not url or count <= 0:
+        return {"items": []}
+
+    def load():
+        req = urllib.request.Request(url, headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml",
+        })
+        with _external.open(req, timeout=10) as r:
+            raw = r.read(3_000_000)
+        return parse_feed(raw)
+
+    return {"items": cache.get(("feed", url), 900, load)[:count]}
 
 
 def geocode(query):
@@ -577,6 +648,18 @@ def api_headlines(req):
         return headlines(count)
     except Exception as e:
         raise BadRequest(f"Couldn't reach Hacker News: {e}", HTTPStatus.BAD_GATEWAY)
+
+
+@route("GET", "/api/feed")
+def api_feed(req):
+    with db() as conn:
+        s = get_settings(conn)
+    try:
+        return feed(s["feed_url"], s["headlines"])
+    except ET.ParseError:
+        raise BadRequest("That feed address didn't return an RSS or Atom feed.", HTTPStatus.BAD_GATEWAY)
+    except Exception as e:
+        raise BadRequest(f"Couldn't load the feed: {e}", HTTPStatus.BAD_GATEWAY)
 
 
 @route("GET", "/api/geocode")

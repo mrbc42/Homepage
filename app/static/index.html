@@ -82,7 +82,7 @@ button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 10px; }
 
 .wrap {
-  max-width: 1240px;
+  max-width: 1360px;
   margin: 0 auto;
   padding-block: 28px 56px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -128,9 +128,14 @@ button, input, select { font: inherit; color: inherit; }
 .gear svg { transition: transform .3s ease; }
 
 /* ——— top row ——— */
-.top { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 20px; }
-.top.solo { grid-template-columns: minmax(0, 1fr); }
-@media (max-width: 900px) { .top { grid-template-columns: minmax(0, 1fr); } }
+.top { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+.top[data-feeds="1"] { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.top[data-feeds="0"] { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1180px) {
+  .top, .top[data-feeds="1"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .top .weather { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) { .top, .top[data-feeds="1"] { grid-template-columns: minmax(0, 1fr); } }
 
 .card {
   background: var(--surface); border: 1px solid var(--line);
@@ -245,6 +250,12 @@ button, input, select { font: inherit; color: inherit; }
 .news .t { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
 .news .m { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; font-family: var(--font-mono); }
 .news .msg { color: var(--muted); padding: 8px; }
+#feed li:nth-child(6n+1) { --dot: var(--c-teal); }
+#feed li:nth-child(6n+2) { --dot: var(--c-sky); }
+#feed li:nth-child(6n+3) { --dot: var(--c-lime); }
+#feed li:nth-child(6n+4) { --dot: var(--c-sun); }
+#feed li:nth-child(6n+5) { --dot: var(--c-coral); }
+#feed li:nth-child(6n+6) { --dot: var(--c-violet); }
 
 /* ——— apps ——— */
 .apps { display: grid; gap: 22px; }
@@ -307,12 +318,6 @@ button, input, select { font: inherit; color: inherit; }
 .dot[data-s="off"] { display: none; }
 @media (prefers-reduced-motion: reduce) { .tile, .gear svg { transition: none; } }
 
-.add-tile {
-  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 80px;
-  border: 2px dashed var(--line); border-radius: var(--r-md); background: transparent;
-  color: var(--muted); font-weight: 600; cursor: pointer;
-}
-.add-tile:hover { border-color: var(--c-berry); color: var(--c-berry); }
 .empty {
   display: grid; gap: 12px; justify-items: start; padding: 28px;
   border: 2px dashed var(--line); border-radius: var(--r-lg);
@@ -469,6 +474,11 @@ dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
       <h2 class="card-title">Headlines <span class="pill">Hacker News</span></h2>
       <ol id="news-list"><li class="msg">Loading…</li></ol>
     </article>
+
+    <article class="card news" id="feed">
+      <h2 class="card-title"><span id="feed-title">News</span> <span class="pill" id="feed-src">RSS</span></h2>
+      <ol id="feed-list"><li class="msg">Loading…</li></ol>
+    </article>
   </section>
 
   <section class="apps" id="apps">
@@ -479,7 +489,6 @@ dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
       </div>
       <div class="btns">
         <button class="btn" id="manage-btn" type="button">Manage apps</button>
-        <button class="btn primary" id="add-btn" type="button">+ Add app</button>
       </div>
     </div>
     <div class="shelves" id="shelves"></div>
@@ -487,7 +496,7 @@ dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
 
   <footer class="foot">
     <span>Weather, air quality and place search: Open-Meteo</span>
-    <span>Headlines: Hacker News</span>
+    <span>Headlines: Hacker News and your chosen RSS feed</span>
     <span>Icons: dashboardicons.com</span>
   </footer>
 </main>
@@ -554,11 +563,6 @@ dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
       </div>
       <div class="row2">
         <div class="field">
-          <label for="s-headlines">Headlines to show</label>
-          <input id="s-headlines" name="headlines" type="number" min="0" max="20" required>
-          <span class="hint">0 hides the headlines card.</span>
-        </div>
-        <div class="field">
           <label for="s-search">Search engine</label>
           <select id="s-search" name="search_url">
             <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
@@ -571,6 +575,32 @@ dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
       </div>
       <label class="check"><input type="checkbox" id="s-clock" name="clock_24h"> 24-hour clock</label>
       <label class="check"><input type="checkbox" id="s-newtab" name="open_in_new_tab"> Open apps in a new tab</label>
+
+      <h3 class="section-title">News</h3>
+      <div class="field">
+        <label for="s-headlines">Stories per card</label>
+        <input id="s-headlines" name="headlines" type="number" min="0" max="20" required>
+        <span class="hint">0 hides both news cards.</span>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="s-feed-title">Second card name</label>
+          <input id="s-feed-title" name="feed_title" maxlength="40" placeholder="ABC News">
+        </div>
+        <div class="field">
+          <label for="s-feed-url">RSS or Atom feed address</label>
+          <input id="s-feed-url" name="feed_url" list="feed-presets" placeholder="https://…/rss.xml">
+          <datalist id="feed-presets">
+            <option value="https://www.abc.net.au/news/feed/51120/rss.xml">ABC News: Just In</option>
+            <option value="https://feeds.bbci.co.uk/news/world/rss.xml">BBC World</option>
+            <option value="https://www.theguardian.com/au/rss">The Guardian Australia</option>
+            <option value="https://www.reddit.com/r/selfhosted/.rss">r/selfhosted</option>
+            <option value="https://www.reddit.com/r/homeassistant/.rss">r/homeassistant</option>
+            <option value="https://selfh.st/rss/">selfh.st</option>
+          </datalist>
+          <span class="hint">Leave blank to hide the second card.</span>
+        </div>
+      </div>
 
       <h3 class="section-title">Status checks</h3>
       <label class="check"><input type="checkbox" id="s-status" name="status_checks"> Check whether my apps are online</label>
@@ -789,24 +819,34 @@ async function loadWeather() {
 }
 $("#w-cta").addEventListener("click", () => openSettings("general"));
 
-/* ——— headlines ——— */
-const ago = s => { const m = Math.max(1, Math.round((Date.now() / 1000 - s) / 60)); return m < 60 ? `${m}m ago` : `${Math.round(m / 60)}h ago`; };
-async function loadNews() {
-  const show = state.settings.headlines > 0;
-  $("#news").hidden = !show;
-  $("#top").classList.toggle("solo", !show);
-  if (!show) return;
-  const list = $("#news-list");
+/* ——— news ——— */
+const ago = s => { const m = Math.max(1, Math.round((Date.now() / 1000 - s) / 60)); return m < 60 ? `${m}m ago` : m < 2880 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
+const hostName = u => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } };
+
+function layoutTop() {
+  const s = state.settings, hn = s.headlines > 0, rss = hn && !!s.feed_url;
+  $("#news").hidden = !hn;
+  $("#feed").hidden = !rss;
+  $("#top").dataset.feeds = (hn ? 1 : 0) + (rss ? 1 : 0);
+  $("#feed-title").textContent = s.feed_title || "News";
+  $("#feed-src").textContent = hostName(s.feed_url) || "RSS";
+}
+
+async function loadList(path, list, meta) {
   try {
-    const { items } = await api("/api/headlines");
-    list.innerHTML = items.map(it => {
-      let host = "news.ycombinator.com";
-      try { host = new URL(it.url).hostname.replace(/^www\./, ""); } catch {}
-      return `<li><a href="${esc(it.url)}" target="_blank" rel="noopener"><span><span class="t">${esc(it.title)}</span><span class="m">${it.score} points · ${ago(it.time)} · ${esc(host)}</span></span></a></li>`;
-    }).join("") || `<li class="msg">No stories right now.</li>`;
+    const { items } = await api(path);
+    list.innerHTML = items.map(it =>
+      `<li><a href="${esc(it.url)}" target="_blank" rel="noopener"><span><span class="t">${esc(it.title)}</span><span class="m">${esc(meta(it))}</span></span></a></li>`
+    ).join("") || `<li class="msg">No stories right now.</li>`;
   } catch (e) {
     list.innerHTML = `<li class="msg">${esc(e.message)} The page tries again in 15 minutes.</li>`;
   }
+}
+
+function loadNews() {
+  layoutTop();
+  if (!$("#news").hidden) loadList("/api/headlines", $("#news-list"), it => `${it.score} points · ${ago(it.time)} · ${hostName(it.url) || "news.ycombinator.com"}`);
+  if (!$("#feed").hidden) loadList("/api/feed", $("#feed-list"), it => it.time ? ago(it.time) : hostName(it.url));
 }
 
 /* ——— apps ——— */
@@ -841,7 +881,7 @@ function renderApps() {
   } else {
     $("#shelves").innerHTML = groups.map(g =>
       `<div class="shelf"><h3>${esc(g.name)}</h3><div class="grid">${g.apps.map(tileHTML).join("")}</div></div>`
-    ).join("") + `<div class="grid"><button class="add-tile" type="button" data-add>+ Add an app</button></div>`;
+    ).join("");
   }
   renderStatus();
 }
@@ -906,7 +946,6 @@ function openAppDialog(app = null, groupId = null) {
   appDlg.showModal();
   $("#f-name").focus();
 }
-$("#add-btn").addEventListener("click", () => openAppDialog());
 $("#app-cancel").addEventListener("click", () => appDlg.close());
 
 $("#app-form").addEventListener("submit", async e => {
@@ -999,6 +1038,8 @@ function fillGeneral() {
   $("#s-temp").value = s.temperature_unit;
   $("#s-wind").value = s.wind_unit;
   $("#s-headlines").value = s.headlines;
+  $("#s-feed-title").value = s.feed_title;
+  $("#s-feed-url").value = s.feed_url;
   const sel = $("#s-search");
   if (![...sel.options].some(o => o.value === s.search_url)) sel.add(new Option("Custom", s.search_url));
   sel.value = s.search_url;
@@ -1037,6 +1078,7 @@ $("#panel-general").addEventListener("submit", async e => {
   const body = {
     title: $("#s-title").value, temperature_unit: $("#s-temp").value, wind_unit: $("#s-wind").value,
     headlines: +$("#s-headlines").value, search_url: $("#s-search").value,
+    feed_title: $("#s-feed-title").value, feed_url: $("#s-feed-url").value.trim(),
     clock_24h: $("#s-clock").checked, open_in_new_tab: $("#s-newtab").checked,
     status_checks: $("#s-status").checked, status_interval: +$("#s-interval").value,
   };
