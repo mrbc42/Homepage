@@ -6,6 +6,7 @@ Standard library only.
 """
 
 import hmac
+import math
 import json
 import mimetypes
 import os
@@ -19,7 +20,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -49,6 +50,7 @@ DEFAULT_SETTINGS = {
     "open_in_new_tab": False,
     "status_checks": True,
     "status_interval": 60,
+    "show_tides": True,
 }
 
 
@@ -202,7 +204,7 @@ def clean_settings(patch):
             if value not in WIND_UNITS:
                 raise BadRequest("Wind unit must be kmh, mph, ms or kn.")
             out[key] = value
-        elif key in ("clock_24h", "open_in_new_tab", "status_checks"):
+        elif key in ("clock_24h", "open_in_new_tab", "status_checks", "show_tides"):
             out[key] = bool(value)
         elif key == "search_url":
             out[key] = clean_url(value, "Search address")
@@ -320,9 +322,77 @@ def weather_for(settings):
             air = fetch_json(f"https://air-quality-api.open-meteo.com/v1/air-quality?{q}&current=european_aqi")
         except Exception:
             air = None
-        return {"location": loc, "weather": forecast, "air": air, "fetched_at": int(time.time())}
+        tides = None
+        if settings["show_tides"]:
+            try:
+                tides = tides_for(loc, feet=settings["temperature_unit"] == "fahrenheit")
+            except Exception as e:
+                print(f"tides unavailable: {e}", flush=True)
+        return {"location": loc, "weather": forecast, "air": air, "tides": tides, "fetched_at": int(time.time())}
 
-    return cache.get(("weather", q, units), 600, load)
+    return cache.get(("weather", q, units, settings["show_tides"]), 600, load)
+
+
+COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+
+
+def distance_and_bearing(lat1, lon1, lat2, lon2):
+    p1, p2, dl = math.radians(lat1), math.radians(lat2), math.radians(lon2 - lon1)
+    a = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    km = 6371 * 2 * math.asin(math.sqrt(a))
+    y = math.sin(dl) * math.cos(p2)
+    x = math.cos(p1) * math.sin(p2) - math.sin(p1) * math.cos(p2) * math.cos(dl)
+    deg = (math.degrees(math.atan2(y, x)) + 360) % 360
+    return round(km), COMPASS[round(deg / 45) % 8]
+
+
+def tide_events(times, heights):
+    """Find highs and lows in an hourly series, refined with a parabola through each peak."""
+    events = []
+    for i in range(1, len(heights) - 1):
+        a, b, c = heights[i - 1], heights[i], heights[i + 1]
+        if None in (a, b, c):
+            continue
+        if b > a and b >= c:
+            kind = "high"
+        elif b < a and b <= c:
+            kind = "low"
+        else:
+            continue
+        curve = a - 2 * b + c
+        offset = (a - c) / (2 * curve) if curve else 0.0
+        offset = max(-0.5, min(0.5, offset))
+        when = datetime.fromisoformat(times[i]) + timedelta(hours=offset)
+        events.append({
+            "type": kind,
+            "time": when.strftime("%Y-%m-%dT%H:%M"),
+            "height": round(b - (a - c) * offset / 4, 2),
+        })
+    return events
+
+
+def tides_for(loc, feet=False):
+    """Modelled sea level at the nearest sea grid cell (Open-Meteo Marine). Not for navigation."""
+    q = urllib.parse.urlencode({
+        "latitude": loc["latitude"], "longitude": loc["longitude"], "timezone": "auto",
+        "hourly": "sea_level_height_msl", "past_days": 1, "forecast_days": 3, "cell_selection": "sea",
+        "length_unit": "imperial" if feet else "metric",
+    })
+    data = fetch_json(f"https://marine-api.open-meteo.com/v1/marine?{q}")
+    times, heights = data["hourly"]["time"], data["hourly"]["sea_level_height_msl"]
+    if sum(h is not None for h in heights) < 24:
+        return None
+    km, direction = distance_and_bearing(loc["latitude"], loc["longitude"], data["latitude"], data["longitude"])
+    return {
+        "latitude": data["latitude"],
+        "longitude": data["longitude"],
+        "distance_km": km,
+        "direction": direction,
+        "unit": "ft" if feet else "m",
+        "utc_offset_seconds": data.get("utc_offset_seconds", 0),
+        "series": [[t, h] for t, h in zip(times, heights) if h is not None],
+        "events": tide_events(times, heights),
+    }
 
 
 def headlines(count):

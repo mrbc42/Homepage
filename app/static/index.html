@@ -229,6 +229,27 @@ button, input, select { font: inherit; color: inherit; }
   background: linear-gradient(90deg, #bfeaff, #fff3b0, #ffb36b);
 }
 
+/* tides — sit under the forecast on the same card */
+.tides { position: relative; z-index: 1; display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid rgb(255 255 255 / .28); }
+.tides-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.tides-head b { font: 700 18px/1.2 var(--font-display); }
+.tides-head span { opacity: .9; }
+.tides-head .pill { margin-left: auto; background: rgb(255 255 255 / .2); color: #fff; }
+.tide-chart { position: relative; height: 112px; margin: 18px 0 16px; }
+.tide-chart svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.tide-chart .area { fill: rgb(255 255 255 / .2); }
+.tide-chart .line { fill: none; stroke: #fff; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.tide-chart .mid { stroke: rgb(255 255 255 / .55); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-dasharray: 2 4; }
+.tide-chart .now { stroke: #fff; stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-dasharray: 4 3; }
+.t-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgb(255 255 255 / .3); }
+.t-dot.now { width: 14px; height: 14px; margin: -7px 0 0 -7px; background: var(--c-sun); box-shadow: 0 0 0 4px rgb(255 255 255 / .5); }
+.t-lab { position: absolute; transform: translateX(-50%); font: 600 11px/1.15 var(--font-mono); text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.t-lab.high { transform: translate(-50%, -100%); margin-top: -9px; }
+.t-lab.low { margin-top: 9px; }
+.tide-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.tide-list .chip b small { font: inherit; opacity: .75; text-transform: none; letter-spacing: 0; }
+.tides .note-sm { font-size: 11px; opacity: .75; }
+
 /* headlines */
 .news { display: grid; align-content: start; }
 .news ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: n; }
@@ -468,6 +489,12 @@ dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
       <div class="chips" id="w-chips"></div>
       <div class="hours" id="w-hours" aria-label="Next 12 hours"></div>
       <div class="days" id="w-days" aria-label="Next 5 days"></div>
+      <section class="tides" id="w-tides" aria-label="Tides" hidden>
+        <div class="tides-head"><b>Tides</b><span id="t-now"></span><span class="pill" id="t-where" title="Modelled sea level at the nearest sea point"></span></div>
+        <div class="tide-chart" id="t-chart"></div>
+        <div class="tide-list" id="t-list"></div>
+        <span class="note-sm">Model estimate from Open-Meteo, height above mean sea level. Not for navigation.</span>
+      </section>
     </article>
 
     <article class="card news" id="news">
@@ -495,7 +522,7 @@ dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
   </section>
 
   <footer class="foot">
-    <span>Weather, air quality and place search: Open-Meteo</span>
+    <span>Weather, tides, air quality and place search: Open-Meteo</span>
     <span>Headlines: Hacker News and your chosen RSS feed</span>
     <span>Icons: dashboardicons.com</span>
   </footer>
@@ -574,6 +601,7 @@ dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
         </div>
       </div>
       <label class="check"><input type="checkbox" id="s-clock" name="clock_24h"> 24-hour clock</label>
+      <label class="check"><input type="checkbox" id="s-tides" name="show_tides"> Show tides for the nearest coast</label>
       <label class="check"><input type="checkbox" id="s-newtab" name="open_in_new_tab"> Open apps in a new tab</label>
 
       <h3 class="section-title">News</h3>
@@ -763,6 +791,7 @@ const hhmm = iso => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minu
 function weatherMessage(title, detail, cta) {
   $("#weather").dataset.sky = "none";
   for (const id of ["#w-icon", "#w-temp", "#w-chips", "#w-hours", "#w-days"]) $(id).innerHTML = "";
+  $("#w-tides").hidden = true;
   $("#w-desc").textContent = title;
   $("#w-feels").textContent = detail;
   $("#w-place").textContent = "";
@@ -770,7 +799,72 @@ function weatherMessage(title, detail, cta) {
   $("#w-cta").hidden = !cta;
 }
 
-function renderWeather({ location: loc, weather: w, air }) {
+const fmtH = (h, u) => `${h >= 0 ? "+" : "−"}${Math.abs(h).toFixed(1)} ${u}`;
+
+function smoothPath(p) {
+  // Catmull-Rom through the hourly points, as cubic Béziers.
+  let d = `M${p[0][0]},${p[0][1]}`;
+  for (let i = 0; i < p.length - 1; i++) {
+    const a = p[i - 1] || p[i], b = p[i], c = p[i + 1], e = p[i + 2] || c;
+    d += ` C${b[0] + (c[0] - a[0]) / 6},${b[1] + (c[1] - a[1]) / 6} ${c[0] - (e[0] - b[0]) / 6},${c[1] - (e[1] - b[1]) / 6} ${c[0]},${c[1]}`;
+  }
+  return d;
+}
+
+function renderTides(t) {
+  const box = $("#w-tides");
+  box.hidden = !t;
+  if (!t) return;
+  const ms = s => new Date(s).getTime();
+  // Times are wall-clock at the tide point; shift "now" into the same frame.
+  const now = Date.now() + (t.utc_offset_seconds + new Date().getTimezoneOffset() * 60) * 1000;
+  const from = now - 6 * 3600e3, to = now + 30 * 3600e3;
+  const pts = t.series.map(([s, h]) => [ms(s), h]).filter(([x]) => x >= from - 3600e3 && x <= to + 3600e3);
+  if (pts.length < 6) { box.hidden = true; return; }
+  const hs = pts.map(p => p[1]), lo = Math.min(...hs), hi = Math.max(...hs), pad = (hi - lo) * .12 || .1;
+  const X = x => (x - from) / (to - from) * 100, Y = h => 100 - (h - lo + pad) / (hi - lo + 2 * pad) * 100;
+  const heightAt = x => {
+    const i = pts.findIndex(p => p[0] >= x);
+    if (i <= 0) return pts[Math.max(0, i)][1];
+    const [x0, h0] = pts[i - 1], [x1, h1] = pts[i];
+    return h0 + (h1 - h0) * (x - x0) / (x1 - x0);
+  };
+  const line = smoothPath(pts.map(([x, h]) => [X(x), Y(h)]));
+  const hNow = heightAt(now), rising = heightAt(now + 1800e3) > hNow;
+
+  const events = t.events.map(e => ({ ...e, x: ms(e.time) }));
+  const visible = events.filter(e => e.x > from && e.x < to);
+  const next = events.filter(e => e.x > now);
+  const today = new Date(now).toDateString();
+  const dayOf = x => { const d = new Date(x); return d.toDateString() === today ? "" : d.toLocaleDateString([], { weekday: "short" }) + " "; };
+  const at = x => new Date(x).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: !state.settings.clock_24h });
+
+  // A dashed line at each midnight in the window.
+  let marks = "";
+  for (const mid = new Date(from); mid.setHours(24, 0, 0, 0) < to;) {
+    const x = X(mid.getTime());
+    marks += `<line class="mid" x1="${x}" x2="${x}" y1="0" y2="100"/>`;
+  }
+
+  $("#t-chart").innerHTML =
+    `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      ${marks}
+      <path class="area" d="${line} L${X(pts.at(-1)[0])},100 L${X(pts[0][0])},100 Z"/>
+      <path class="line" d="${line}"/>
+      <line class="now" x1="${X(now)}" x2="${X(now)}" y1="0" y2="100"/>
+    </svg>` +
+    visible.map(e => `<span class="t-dot" style="left:${X(e.x)}%;top:${Y(e.height)}%"></span>` +
+      `<span class="t-lab ${e.type}" style="left:${Math.min(95, Math.max(5, X(e.x)))}%;top:${Y(e.height)}%">${at(e.x)}<br>${fmtH(e.height, t.unit)}</span>`).join("") +
+    `<span class="t-dot now" style="left:${X(now)}%;top:${Y(hNow)}%" title="Now: ${fmtH(hNow, t.unit)}"></span>`;
+
+  const n = next[0];
+  $("#t-now").textContent = `${rising ? "Rising" : "Falling"} · ${fmtH(hNow, t.unit)} now` + (n ? ` · ${n.type} tide at ${at(n.x)}` : "");
+  $("#t-where").textContent = t.distance_km < 3 ? "At your location" : `${t.distance_km} km ${t.direction}`;
+  $("#t-list").innerHTML = next.slice(0, 4).map(e =>
+    `<div class="chip"><small>${e.type === "high" ? "High" : "Low"} tide</small><b>${dayOf(e.x)}${at(e.x)} <small>${fmtH(e.height, t.unit)}</small></b></div>`).join("");
+}
+
+function renderWeather({ location: loc, weather: w, air, tides }) {
   const c = w.current, [kind, label] = WMO(c.weather_code), day = !!c.is_day;
   $("#w-cta").hidden = true;
   $("#weather").dataset.sky = kind === "clear" && !day ? "clear-night" : kind;
@@ -806,6 +900,7 @@ function renderWeather({ location: loc, weather: w, air }) {
     const i = k + 1, a = (d.temperature_2m_min[i] - lo) / span * 100, b = (d.temperature_2m_max[i] - lo) / span * 100;
     return `<div class="day"><span>${new Date(t + "T12:00").toLocaleDateString([], { weekday: "short" })}</span>${wIcon(WMO(d.weather_code[i])[0])}<span class="lo">${Math.round(d.temperature_2m_min[i])}°</span><div class="range"><span style="left:${a}%;right:${100 - b}%"></span></div><span class="hi">${Math.round(d.temperature_2m_max[i])}°</span></div>`;
   }).join("");
+  renderTides(tides);
 }
 
 async function loadWeather() {
@@ -1044,6 +1139,7 @@ function fillGeneral() {
   if (![...sel.options].some(o => o.value === s.search_url)) sel.add(new Option("Custom", s.search_url));
   sel.value = s.search_url;
   $("#s-clock").checked = s.clock_24h;
+  $("#s-tides").checked = s.show_tides;
   $("#s-newtab").checked = s.open_in_new_tab;
   $("#s-status").checked = s.status_checks;
   $("#s-interval").value = s.status_interval;
@@ -1079,7 +1175,7 @@ $("#panel-general").addEventListener("submit", async e => {
     title: $("#s-title").value, temperature_unit: $("#s-temp").value, wind_unit: $("#s-wind").value,
     headlines: +$("#s-headlines").value, search_url: $("#s-search").value,
     feed_title: $("#s-feed-title").value, feed_url: $("#s-feed-url").value.trim(),
-    clock_24h: $("#s-clock").checked, open_in_new_tab: $("#s-newtab").checked,
+    clock_24h: $("#s-clock").checked, show_tides: $("#s-tides").checked, open_in_new_tab: $("#s-newtab").checked,
     status_checks: $("#s-status").checked, status_interval: +$("#s-interval").value,
   };
   if (pendingLocation !== undefined) body.location = pendingLocation;

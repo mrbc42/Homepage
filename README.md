@@ -98,5 +98,6 @@ HOMEPAGE_DATA=./data python3 app/server.py
 
 ## Where the data comes from
 
-Weather, air quality and place search: [Open-Meteo](https://open-meteo.com) (free, no API key).
+Weather, air quality, tides and place search: [Open-Meteo](https://open-meteo.com) (free, no API key).
+Tides are modelled sea level at the nearest sea point and are not for navigation.
 Headlines: [Hacker News API](https://github.com/HackerNews/API).
