@@ -772,7 +772,8 @@ setInterval(tick, 1000);
 $("#search").addEventListener("submit", e => {
   e.preventDefault();
   const q = $("#q").value.trim(); if (!q) return;
-  location.href = (state.settings?.search_url || "https://duckduckgo.com/?q=") + encodeURIComponent(q);
+  window.open((state.settings?.search_url || "https://duckduckgo.com/?q=") + encodeURIComponent(q), "_blank", "noopener");
+  $("#q").value = "";
 });
 
 /* ——— weather ——— */
