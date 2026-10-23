@@ -832,6 +832,8 @@ function renderTides(t) {
   const box = $("#w-tides");
   box.hidden = !t;
   if (!t) return;
+  for (const id of ["#t-chart", "#t-list", "#t-where"]) $(id).hidden = !!t.error;
+  if (t.error) { $("#t-now").textContent = t.error; return; }
   const ms = s => new Date(s).getTime();
   // Times are wall-clock at the tide point; shift "now" into the same frame.
   const now = Date.now() + (t.utc_offset_seconds + new Date().getTimezoneOffset() * 60) * 1000;

@@ -328,6 +328,7 @@ def weather_for(settings):
                 tides = tides_for(loc, feet=settings["temperature_unit"] == "fahrenheit")
             except Exception as e:
                 print(f"tides unavailable: {e}", flush=True)
+                tides = {"error": f"Couldn't reach the tide service: {e}"}
         return {"location": loc, "weather": forecast, "air": air, "tides": tides, "fetched_at": int(time.time())}
 
     return cache.get(("weather", q, units, settings["show_tides"]), 600, load)
@@ -371,21 +372,72 @@ def tide_events(times, heights):
     return events
 
 
-def tides_for(loc, feet=False):
-    """Modelled sea level at the nearest sea grid cell (Open-Meteo Marine). Not for navigation."""
+MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
+TIDE_SEARCH_KM = (8, 16, 25, 35, 50, 70)  # rings checked when the town itself has no tide data
+TIDE_SEARCH_BEARINGS = 16
+_tide_points = {}  # (lat, lon) of the weather location -> (lat, lon) of the tide point, or None
+
+
+def _offset(lat, lon, km, bearing_deg):
+    """Point km away from lat/lon on a bearing (spherical earth)."""
+    d, b = km / 6371, math.radians(bearing_deg)
+    p1, l1 = math.radians(lat), math.radians(lon)
+    p2 = math.asin(math.sin(p1) * math.cos(d) + math.cos(p1) * math.sin(d) * math.cos(b))
+    l2 = l1 + math.atan2(math.sin(b) * math.sin(d) * math.cos(p1), math.cos(d) - math.sin(p1) * math.sin(p2))
+    return round(math.degrees(p2), 4), round((math.degrees(l2) + 540) % 360 - 180, 4)
+
+
+def _has_tide(data):
+    heights = (data.get("hourly") or {}).get("sea_level_height_msl") or []
+    return sum(h is not None for h in heights) >= 12
+
+
+def find_tide_point(lat, lon):
+    """The nearest point with modelled sea level: the location itself, else the closest ring point."""
+    key = (lat, lon)
+    if key in _tide_points:
+        return _tide_points[key]
+    points = [(lat, lon)] + [
+        _offset(lat, lon, km, i * 360 / TIDE_SEARCH_BEARINGS)
+        for km in TIDE_SEARCH_KM for i in range(TIDE_SEARCH_BEARINGS)
+    ]
     q = urllib.parse.urlencode({
-        "latitude": loc["latitude"], "longitude": loc["longitude"], "timezone": "auto",
-        "hourly": "sea_level_height_msl", "past_days": 1, "forecast_days": 3, "cell_selection": "sea",
+        "latitude": ",".join(str(p[0]) for p in points),
+        "longitude": ",".join(str(p[1]) for p in points),
+        "hourly": "sea_level_height_msl", "forecast_days": 1,
+    })
+    results = fetch_json(f"{MARINE_URL}?{q}", timeout=20)
+    if isinstance(results, dict):
+        results = [results]
+    best = None
+    for point, data in zip(points, results):
+        if _has_tide(data):
+            km = distance_and_bearing(lat, lon, *point)[0]
+            if best is None or km < best[0]:
+                best = (km, point)
+    _tide_points[key] = best[1] if best else None
+    return _tide_points[key]
+
+
+def tides_for(loc, feet=False):
+    """Modelled sea level at the nearest point with data (Open-Meteo Marine). Not for navigation."""
+    point = find_tide_point(loc["latitude"], loc["longitude"])
+    if not point:
+        return {"error": f"No tide data within {TIDE_SEARCH_KM[-1]} km of {loc['name']}."}
+    q = urllib.parse.urlencode({
+        "latitude": point[0], "longitude": point[1], "timezone": "auto",
+        "hourly": "sea_level_height_msl", "past_days": 1, "forecast_days": 3,
         "length_unit": "imperial" if feet else "metric",
     })
-    data = fetch_json(f"https://marine-api.open-meteo.com/v1/marine?{q}")
+    data = fetch_json(f"{MARINE_URL}?{q}")
     times, heights = data["hourly"]["time"], data["hourly"]["sea_level_height_msl"]
-    if sum(h is not None for h in heights) < 24:
-        return None
-    km, direction = distance_and_bearing(loc["latitude"], loc["longitude"], data["latitude"], data["longitude"])
+    if not _has_tide(data):
+        _tide_points.pop((loc["latitude"], loc["longitude"]), None)  # search again next time
+        return {"error": "The tide service returned no data. The page tries again in 10 minutes."}
+    km, direction = distance_and_bearing(loc["latitude"], loc["longitude"], *point)
     return {
-        "latitude": data["latitude"],
-        "longitude": data["longitude"],
+        "latitude": point[0],
+        "longitude": point[1],
         "distance_km": km,
         "direction": direction,
         "unit": "ft" if feet else "m",
