@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Home Base</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#e8357a">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -376,6 +378,14 @@ dialog::backdrop { background: rgb(20 15 40 / .45); backdrop-filter: blur(3px); 
 .swatches input:checked + label { border-color: var(--surface); outline-color: var(--sw); }
 .swatches input:focus-visible + label { outline: 3px solid var(--focus); }
 .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.icon-preview { display: grid; gap: 8px; padding: 14px; border-radius: var(--r-md); background: var(--surface-2); }
+.icon-preview .tile { box-shadow: none; pointer-events: none; }
+.p-msg { font-size: 13px; color: var(--muted); padding-left: 2px; }
+.p-msg[data-s="ok"] { color: var(--ok); font-weight: 600; }
+.p-msg[data-s="bad"] { color: var(--down); }
+.p-msg[data-s="ok"]::before { content: "✓ "; }
+.p-msg a { color: inherit; }
+.link { border: 0; background: none; padding: 0; color: var(--c-berry); font-weight: 600; text-decoration: underline; cursor: pointer; }
 .form-error { color: var(--down); font-weight: 600; font-size: 13px; }
 .form-error:empty { display: none; }
 
@@ -690,8 +700,15 @@ dialog.drawer[open] { display: flex; animation: slide .22s ease-out; }
     </div>
     <div class="field">
       <label for="f-icon">Icon (optional)</label>
-      <input id="f-icon" name="icon" placeholder="paperless-ngx">
-      <span class="hint">A name from dashboardicons.com or a full image URL. Leave blank to show the first letter.</span>
+      <input id="f-icon" name="icon" placeholder="paperless-ngx" autocomplete="off" spellcheck="false">
+      <span class="hint">A name from <a href="https://dashboardicons.com" target="_blank" rel="noopener">dashboardicons.com</a> or a full image URL. Leave blank to show the first letter.</span>
+    </div>
+    <div class="icon-preview" aria-live="polite">
+      <div class="tile" id="p-tile">
+        <span class="ico" id="p-ico">?</span>
+        <span class="tile-text"><b id="p-name">App name</b><small id="p-host">Preview</small></span>
+      </div>
+      <div class="p-msg" id="p-msg" data-s="none">Type an icon name to see it here.</div>
     </div>
     <div class="field">
       <span class="label">Colour</span>
@@ -1039,12 +1056,79 @@ function openAppDialog(app = null, groupId = null) {
     $("#f-check").checked = app.check; $("#f-checkurl").value = app.check_url;
   }
   appDlg.showModal();
+  updatePreview();
   $("#f-name").focus();
 }
 $("#app-cancel").addEventListener("click", () => appDlg.close());
 
+/* Live icon preview: shows the tile as it will look and checks the icon really exists. */
+const iconSrc = v => /^https?:\/\//i.test(v) ? v : ICON_CDN(v.toLowerCase());
+const slugify = s => s.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_]+/g, "-");
+const iconChecks = new Map();  // src -> Promise<boolean>
+function iconExists(src) {
+  if (!iconChecks.has(src)) iconChecks.set(src, new Promise(res => {
+    const img = new Image();
+    img.onload = () => res(img.naturalWidth > 0);
+    img.onerror = () => res(false);
+    img.src = src;
+  }));
+  return iconChecks.get(src);
+}
+let previewSeq = 0, previewTimer, iconState = "none";
+
+function paintPreviewTile(src) {
+  const name = $("#f-name").value.trim() || "App name";
+  const colour = new FormData($("#app-form")).get("colour") || "sky";
+  $("#p-tile").style.setProperty("--c", colourVar(colour));
+  $("#p-name").textContent = name;
+  $("#p-host").textContent = hostOf($("#f-url").value.trim()) || "Preview";
+  const box = $("#p-ico");
+  box.style.setProperty("--c", colourVar(colour));
+  box.classList.toggle("has-img", !!src);
+  box.innerHTML = src ? `<img src="${esc(src)}" alt="">` : esc(name[0].toUpperCase());
+}
+
+function setPreviewMsg(s, html) { const m = $("#p-msg"); m.dataset.s = s; m.innerHTML = html; }
+
+async function updatePreview() {
+  const seq = ++previewSeq, icon = $("#f-icon").value.trim();
+  if (!icon) {
+    iconState = "none";
+    paintPreviewTile("");
+    const guess = slugify($("#f-name").value);
+    if (!guess) return setPreviewMsg("none", "No icon chosen, so the tile shows the first letter.");
+    setPreviewMsg("none", "No icon chosen, so the tile shows the first letter.");
+    if (await iconExists(ICON_CDN(guess)) && seq === previewSeq)
+      setPreviewMsg("hint", `There's an icon called <b>${esc(guess)}</b>. <button type="button" class="link" id="p-use" data-icon="${esc(guess)}">Use it</button>`);
+    return;
+  }
+  iconState = "checking";
+  setPreviewMsg("checking", "Checking icon…");
+  const src = iconSrc(icon), ok = await iconExists(src);
+  if (seq !== previewSeq) return;
+  iconState = ok ? "ok" : "bad";
+  paintPreviewTile(ok ? src : "");
+  setPreviewMsg(ok ? "ok" : "bad", ok
+    ? `Icon found${/^https?:/i.test(icon) ? "" : `: <b>${esc(icon.toLowerCase())}</b>`}.`
+    : `No icon called <b>${esc(icon)}</b>. Check the spelling on <a href="https://dashboardicons.com" target="_blank" rel="noopener">dashboardicons.com</a>, or clear the box to use the first letter.`);
+}
+function queuePreview() { clearTimeout(previewTimer); previewTimer = setTimeout(updatePreview, 250); }
+$("#f-icon").addEventListener("input", queuePreview);
+$("#f-name").addEventListener("input", queuePreview);
+$("#f-url").addEventListener("input", () => paintPreviewTile(iconState === "ok" ? iconSrc($("#f-icon").value.trim()) : ""));
+$("#swatches").addEventListener("change", () => paintPreviewTile(iconState === "ok" ? iconSrc($("#f-icon").value.trim()) : ""));
+$("#p-msg").addEventListener("click", e => {
+  const b = e.target.closest("#p-use"); if (!b) return;
+  $("#f-icon").value = b.dataset.icon; updatePreview();
+});
+
 $("#app-form").addEventListener("submit", async e => {
   e.preventDefault();
+  if ($("#f-icon").value.trim()) {
+    clearTimeout(previewTimer);
+    await updatePreview();
+    if (iconState === "bad") { $("#app-error").textContent = "That icon doesn't exist. Fix the name or clear the box."; $("#f-icon").focus(); return; }
+  }
   const f = new FormData(e.target);
   const body = {
     name: f.get("name"), url: f.get("url"), icon: f.get("icon"), colour: f.get("colour"),
